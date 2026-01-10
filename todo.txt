@@ -1,0 +1,5 @@
+- implement mdns and SSDP
+
+- implement arp discovery
+    loop over the valid ips between network id and broadcast address
+
