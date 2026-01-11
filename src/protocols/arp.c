@@ -22,3 +22,16 @@ bool create_arp_message(libnet_t* context, device_info source_device, uint32_t t
 
     return true;
 }
+
+void arp_scan(device_info device)
+{
+
+    uint32_t network_id = ntohl(device.network_id); // htonl for other way fuck
+    uint32_t broadcast_addr = ntohl(device.broadcast_address);
+
+    for (uint32_t host = network_id + 1; host < broadcast_addr;  host++)
+    {
+        //printf("%u.%u.%u.%u\n", (host >> 24) & 0xFF, (host >> 16) & 0xFF, (host >> 8) & 0xFF, host & 0xFF);
+
+    }
+}

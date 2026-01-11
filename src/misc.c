@@ -68,8 +68,7 @@ bool get_device_info(device_info* device)
     }
 
     // MAC address
-    bool res = get_MAC_addr(device->name, device->mac_address);
-    if(!res || device->mac_address == NULL)
+    if(!get_MAC_addr(device->name, device->mac_address))
     {
         fprintf(stderr, "Couldn't get MAC address (get_MAC_addr)\n");
         return false;
