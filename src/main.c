@@ -66,7 +66,7 @@ int main(int argc, char* argv[])
     }
 
     // Make Arp Packet
-    char* target_ip_str = "172.17.64.67";
+    char* target_ip_str = "192.168.88.198";
     uint32_t target_ip = inet_addr(target_ip_str);
     if(!create_arp_message(arp_context, my_device, target_ip))
     {
@@ -87,12 +87,26 @@ int main(int argc, char* argv[])
                 "check the wire.\n", c, libnet_cq_getlabel(arp_context));
     }
 
-
-    // Record traffic
     struct pcap_pkthdr header;
-    const unsigned char* packet = pcap_next(handle, &header);
-    printf("Pack length of [%d]\n", header.len);
+    while(1)
+    {
+        struct pcap_pkthdr header;
+        const unsigned char* packet = pcap_next(handle, &header);
+        if (!packet)
+        {
+            continue;
+        }
 
+        uint16_t opcode = {packet[20] << 8 | packet[21]};
+        if(opcode == 2)
+        {
+            printf("Pack length of [%d]\n", header.len);  
+            const unsigned char* src_mac = packet + 14 + 8;
+            printf("MAC Address: %02x:%02x:%02x:%02x:%02x:%02x\n", 
+            src_mac[0], src_mac[1], src_mac[2], src_mac[3], src_mac[4], src_mac[5]);
+            break;
+        }
+    }
 
     libnet_destroy(arp_context);
     pcap_close(handle);
