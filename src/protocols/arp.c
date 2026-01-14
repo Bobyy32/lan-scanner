@@ -1,6 +1,6 @@
 #include "arp.h"
 
-bool create_arp_message(libnet_t* context, device_info source_device, uint32_t target_ip)
+bool create_arp_message(libnet_t* context, const device_info source_device, const uint32_t target_ip)
 {
     // Make Arp Packet
     uint8_t tha[] = {0x0, 0x0, 0x0, 0x0, 0x0, 0x0 };
@@ -24,15 +24,57 @@ bool create_arp_message(libnet_t* context, device_info source_device, uint32_t t
     return true;
 }
 
-void arp_scan(device_info device)
+void arp_scan(libnet_t* context, pcap_t* handle, const device_info device)
 {
 
-    uint32_t network_id = ntohl(device.network_id); // htonl for other way fuck
-    uint32_t broadcast_addr = ntohl(device.broadcast_address);
+    uint32_t start = ntohl(device.network_id);
+    uint32_t end = ntohl(device.broadcast_address);
 
-    for (uint32_t host = network_id + 1; host < broadcast_addr;  host++)
+    for (uint32_t host = start + 1; host < end;  host++)
     {
         //printf("%u.%u.%u.%u\n", (host >> 24) & 0xFF, (host >> 16) & 0xFF, (host >> 8) & 0xFF, host & 0xFF);
+        uint32_t target = htonl(host);
+        if(!create_arp_message(context, device, target))
+        {
+            fprintf(stderr, "Unable to create arp message for %s\n", inet_ntoa((struct in_addr){target}));
+            continue;
+        }
 
+        // If successfuly create arp message then attempt to send
+        int c = libnet_write(context);
+        if (c == -1)
+        {
+            fprintf(stderr, "Packet size: %s\n", libnet_geterror(context));
+            continue;
+        }
+
+        fprintf(stdout, "Wrote %d byte ARP packet to %s\n", c, inet_ntoa((struct in_addr){target}));
+        
+        libnet_clear_packet(context);
+    }
+
+    int wait_sec = 2; // 2 seconds
+    time_t finish_time = time(NULL) + wait_sec;
+    while(time(NULL) < finish_time)
+    {
+        struct pcap_pkthdr header;
+        const unsigned char* packet = pcap_next(handle, &header);
+        if (!packet)
+        {
+            continue;
+        }
+
+        struct ether_header* ether_hdr = (struct ether_header*)packet;
+
+        if(ntohs(ether_hdr->ether_type) == ETHERTYPE_ARP)
+        {
+            struct ether_arp* arp_hdr = (struct ether_arp*)(packet + sizeof(struct ether_header)); 
+            
+            if (ntohs(arp_hdr->ea_hdr.ar_op) == ARPOP_REPLY)
+            {
+                printf("[Reply] MAC Address: %02x:%02x:%02x:%02x:%02x:%02x\n", 
+                    arp_hdr->arp_sha[0], arp_hdr->arp_sha[1], arp_hdr->arp_sha[2], arp_hdr->arp_sha[3], arp_hdr->arp_sha[4], arp_hdr->arp_sha[5]);
+            } 
+        }
     }
 }

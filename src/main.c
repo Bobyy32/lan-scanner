@@ -65,48 +65,7 @@ int main(int argc, char* argv[])
         goto bad;
     }
 
-    // Make Arp Packet
-    char* target_ip_str = "192.168.88.198";
-    uint32_t target_ip = inet_addr(target_ip_str);
-    if(!create_arp_message(arp_context, my_device, target_ip))
-    {
-        fprintf(stderr, "Unable to create arp message for %s\n", target_ip_str);
-        goto bad;
-    }
-
-    // If successfuly create arp message then attempt to send
-    int c = libnet_write(arp_context);
-    if (c == -1)
-    {
-        fprintf(stderr, "Packet size: %s\n", libnet_geterror(arp_context));
-        goto bad;
-    }
-    else
-    {
-        fprintf(stdout, "Wrote %d byte ARP packet from arp_context \"%s\"; "
-                "check the wire.\n", c, libnet_cq_getlabel(arp_context));
-    }
-
-    struct pcap_pkthdr header;
-    while(1)
-    {
-        struct pcap_pkthdr header;
-        const unsigned char* packet = pcap_next(handle, &header);
-        if (!packet)
-        {
-            continue;
-        }
-
-        uint16_t opcode = {packet[20] << 8 | packet[21]};
-        if(opcode == 2)
-        {
-            printf("Pack length of [%d]\n", header.len);  
-            const unsigned char* src_mac = packet + 14 + 8;
-            printf("MAC Address: %02x:%02x:%02x:%02x:%02x:%02x\n", 
-            src_mac[0], src_mac[1], src_mac[2], src_mac[3], src_mac[4], src_mac[5]);
-            break;
-        }
-    }
+    arp_scan(arp_context, handle, my_device); 
 
     libnet_destroy(arp_context);
     pcap_close(handle);

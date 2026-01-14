@@ -3,3 +3,6 @@
 - implement arp discovery
     loop over the valid ips between network id and broadcast address
 
+control how much time we wait for arp reply
+
+check why ether_arp isn't being defined?
