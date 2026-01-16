@@ -5,8 +5,6 @@
 
 #include "../misc.h"
 
-#include <stdint.h>
-#include <libnet.h>
 #include <time.h>
 
 #include <net/ethernet.h>

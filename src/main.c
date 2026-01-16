@@ -27,7 +27,7 @@ int main(int argc, char* argv[])
 
     // create sniffing session to listen for arp replies
     char errbuff[PCAP_ERRBUF_SIZE];
-    pcap_t* handle = pcap_open_live(my_device.name, BUFSIZ, 0, 1000, errbuff);
+    pcap_t* handle = pcap_open_live(my_device.name, BUFSIZ, 0, 100, errbuff); // 100 redundant but keep
     if (handle == NULL)
     {
         fprintf(stderr, "Couldn't open device %s, %s\n", my_device.name, errbuff);
@@ -41,7 +41,7 @@ int main(int argc, char* argv[])
     }
 
     struct bpf_program fp;
-    if (pcap_compile(handle, &fp, "arp", 0, my_device.ipv4_address) == -1)
+    if (pcap_compile(handle, &fp, "arp and arp[6:2] = 2", 0, my_device.ipv4_address) == -1)
     {
         fprintf(stderr, "Couldn't parse filter arp: %s\n", pcap_geterr(handle));
         goto bad;
@@ -53,9 +53,14 @@ int main(int argc, char* argv[])
         goto bad;
     }
 
+    // Set non-blocking mode
+    char pcap_errbuf[PCAP_ERRBUF_SIZE];
+    if (pcap_setnonblock(handle, 1, pcap_errbuf) == -1)
+    {
+        fprintf(stderr, "Couldn't set non-blocking mode: %s\n", pcap_errbuf);
+        goto bad;
+    }
 
-
-    
     // Initialize arp packet context
     char libnet_errbuff[LIBNET_ERRBUF_SIZE];
     libnet_t* arp_context = libnet_init(LIBNET_LINK_ADV, my_device.name, libnet_errbuff);
@@ -65,7 +70,8 @@ int main(int argc, char* argv[])
         goto bad;
     }
 
-    arp_scan(arp_context, handle, my_device); 
+    arp_scan(arp_context, handle, my_device);
+    fprintf(stdout, "Finished ARP scan on device %s\n", my_device.name);
 
     libnet_destroy(arp_context);
     pcap_close(handle);

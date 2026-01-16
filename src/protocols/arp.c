@@ -48,33 +48,57 @@ void arp_scan(libnet_t* context, pcap_t* handle, const device_info device)
             continue;
         }
 
-        fprintf(stdout, "Wrote %d byte ARP packet to %s\n", c, inet_ntoa((struct in_addr){target}));
+        //fprintf(stdout, "Wrote %d byte ARP packet to %s\n", c, inet_ntoa((struct in_addr){target}));
         
         libnet_clear_packet(context);
     }
 
-    int wait_sec = 2; // 2 seconds
-    time_t finish_time = time(NULL) + wait_sec;
-    while(time(NULL) < finish_time)
+    fprintf(stdout, "\nListening for replies:\n");
+
+    struct timespec time_start, time_now;
+    clock_gettime(CLOCK_MONOTONIC, &time_start);
+    int wait_sec = 2;
+    while(1)
     {
-        struct pcap_pkthdr header;
-        const unsigned char* packet = pcap_next(handle, &header);
-        if (!packet)
+        clock_gettime(CLOCK_MONOTONIC, &time_now);
+        double elapsed = (time_now.tv_sec - time_start.tv_sec) + (time_now.tv_nsec - time_start.tv_nsec) / 1000000000.0;
+
+        if (elapsed >= wait_sec)
         {
+            break;
+        }
+
+        //fprintf(stdout, "Remaining Time: %2fs\n", wait_sec - elapsed);
+
+        struct pcap_pkthdr* header;
+        const unsigned char* packet = NULL;
+        int result = pcap_next_ex(handle, &header, &packet);
+        if(result != 1)
+        {
+            // No packet available in non-blocking mode, sleep briefly
+            if (result == 0)
+            {
+                usleep(10000); // 10ms
+            }
+            else
+            {
+                fprintf(stderr, "pcap_next_ex error: %d\n", result);
+            }
             continue;
         }
 
         struct ether_header* ether_hdr = (struct ether_header*)packet;
-
         if(ntohs(ether_hdr->ether_type) == ETHERTYPE_ARP)
         {
             struct ether_arp* arp_hdr = (struct ether_arp*)(packet + sizeof(struct ether_header)); 
             
             if (ntohs(arp_hdr->ea_hdr.ar_op) == ARPOP_REPLY)
             {
-                printf("[Reply] MAC Address: %02x:%02x:%02x:%02x:%02x:%02x\n", 
+                printf("[Reply] IP: %s | MAC Address: %02x:%02x:%02x:%02x:%02x:%02x\n",
+                    inet_ntoa(*(struct in_addr*)arp_hdr->arp_spa),
                     arp_hdr->arp_sha[0], arp_hdr->arp_sha[1], arp_hdr->arp_sha[2], arp_hdr->arp_sha[3], arp_hdr->arp_sha[4], arp_hdr->arp_sha[5]);
             } 
         }
     }
 }
+

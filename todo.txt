@@ -1,8 +1,11 @@
 - implement mdns and SSDP
 
-- implement arp discovery
-    loop over the valid ips between network id and broadcast address
 
-control how much time we wait for arp reply
+things to consider adding:
+- NBNS (NetBIOS Name Service)
+- Passive ARP monitoring
+- TCP port probing
+- DNS PTR lookups
 
-check why ether_arp isn't being defined?
+Prioritization order:
+ARP → mDNS → SSDP → NBNS → passive monitoring → port probes.
