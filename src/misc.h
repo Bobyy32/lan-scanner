@@ -6,6 +6,12 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <stdbool.h>
+#include <time.h>
+
+#include <netinet/ether.h>
+#include <netinet/if_ether.h>
+#include <netinet/ip.h>
+#include <netinet/udp.h>
 
 #include <pcap.h>
 #include <libnet.h>
@@ -23,11 +29,12 @@
 typedef struct device_info
 {
     char name[IF_NAMESIZE]; // Name of network interface
-    uint32_t ipv4_address;
+    uint32_t ipv4_address;  // Addresses stored in network byte order
     uint32_t subnet_mask;
     uint32_t network_id;
     uint32_t broadcast_address;
-    uint8_t mac_address[18];
+    uint8_t mac_address[6];
+
 } device_info;
 
 /*

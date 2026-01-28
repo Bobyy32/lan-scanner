@@ -1,6 +1,5 @@
 - implement mdns and SSDP
 
-
 things to consider adding:
 - NBNS (NetBIOS Name Service)
 - Passive ARP monitoring
@@ -9,3 +8,14 @@ things to consider adding:
 
 Prioritization order:
 ARP → mDNS → SSDP → NBNS → passive monitoring → port probes.
+
+Fingerprinting:
+MAC OUI + DHCP hostname + mDNS device
+
+Things to take a look at:
+ - When implementing mDNS look at: https://github.com/mjansson/mdns
+ - Passive OS Fingerprinting Tool (https://github.com/skord/p0f)
+
+
+probably change:
+- we use the ethernet struct from net but to keep things consistent use netinet instead

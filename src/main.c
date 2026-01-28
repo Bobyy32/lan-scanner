@@ -1,19 +1,6 @@
 #include "misc.h"
 #include "protocols/arp.h"
-
-
-// https://repolinux.wordpress.com/2011/09/18/libnet-1-1-tutorial/#how-libnet-works
-// https://www.tcpdump.org/pcap.html
-// https://www.tcpdump.org/manpages/libpcap-1.10.5/pcap-filter.7.html
-
-/*
-Open pcap handle on interface
-Craft ARP request packet
-Send on network
-Set pcap filter for ARP replies
-Loop and collect responses
-Parse response packets for IP/MAC pair
-*/
+#include "protocols/mdns.h"
 
 int main(int argc, char* argv[])
 {
@@ -25,7 +12,7 @@ int main(int argc, char* argv[])
         return (EXIT_FAILURE);
     }
 
-    // create sniffing session to listen for arp replies
+    /* // create sniffing session to listen for arp replies
     char errbuff[PCAP_ERRBUF_SIZE];
     pcap_t* handle = pcap_open_live(my_device.name, BUFSIZ, 0, 100, errbuff); // 100 redundant but keep
     if (handle == NULL)
@@ -59,34 +46,34 @@ int main(int argc, char* argv[])
     {
         fprintf(stderr, "Couldn't set non-blocking mode: %s\n", pcap_errbuf);
         goto bad;
-    }
+    } */
 
     // Initialize arp packet context
     char libnet_errbuff[LIBNET_ERRBUF_SIZE];
-    libnet_t* arp_context = libnet_init(LIBNET_LINK_ADV, my_device.name, libnet_errbuff);
-    if (!arp_context)
+    libnet_t* context = libnet_init(LIBNET_LINK_ADV, my_device.name, libnet_errbuff);
+    if (!context)
     {
         fprintf(stderr, "Unable to intialize libnet context: %s\n", libnet_errbuff);
         goto bad;
     }
 
-    arp_scan(arp_context, handle, my_device);
-    fprintf(stdout, "Finished ARP scan on device %s\n", my_device.name);
-
-    libnet_destroy(arp_context);
-    pcap_close(handle);
+    mdns_discovery_send(context, my_device);
+    mdns_discovery_rcv(my_device);
+    
+    libnet_destroy(context);
+    //pcap_close(handle);
     return 0;
 
 bad:
-    if (arp_context)
+    if (context)
     {
-        libnet_destroy(arp_context);
+        libnet_destroy(context);
     }
 
-    if (handle)
+    /* if (handle)
     {
         pcap_close(handle);
-    }
+    } */
 
     return (EXIT_FAILURE);
 }
