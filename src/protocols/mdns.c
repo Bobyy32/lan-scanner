@@ -34,7 +34,7 @@ bool mdns_discovery_send(libnet_t *context, const device_info device)
         goto bad;
     }
 
-    libnet_ptag_t ipv4 = libnet_build_ipv4(LIBNET_IPV4_H + LIBNET_UDP_H + LIBNET_DNS_H + offset, 0, 0, 0, 64, IPPROTO_UDP, 0, device.ipv4_address, inet_addr("224.0.0.251"), NULL, 0, context, 0);
+    libnet_ptag_t ipv4 = libnet_build_ipv4(LIBNET_IPV4_H + LIBNET_UDP_H + LIBNET_DNS_H + offset, 0, 0, 0, 255, IPPROTO_UDP, 0, device.ipv4_address, inet_addr("224.0.0.251"), NULL, 0, context, 0);
     if (ipv4 == -1)
     {
         fprintf(stderr, "Can't build IPV4 header: %s\n", libnet_geterror(context));
@@ -87,7 +87,7 @@ void mdns_discovery_rcv(device_info device)
     }
 
     struct bpf_program fp;
-    if (pcap_compile(handle, &fp, "udp port 5353 and multicast", 0, device.ipv4_address) == -1)
+    if (pcap_compile(handle, &fp, "udp port 5353", 0, device.ipv4_address) == -1)
     {
         fprintf(stderr, "Couldn't parse filter mDNS: %s\n", pcap_geterr(handle));
         goto bad;
