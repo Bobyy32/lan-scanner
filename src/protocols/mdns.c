@@ -117,7 +117,7 @@ void mdns_discovery_send_u(libnet_t* context, const device_info device)
     }
 }
 
-void mdns_discovery_rcv_callback(const unsigned char* packet, struct pcap_pktheadr* header, void* data)
+void mdns_discovery_rcv_callback(const unsigned char* packet, struct pcap_pkthdr* header, void* data)
 {
     // https://stackoverflow.com/questions/51376598/c-libpcap-api-extracting-dns-query
 

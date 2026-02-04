@@ -37,7 +37,7 @@ struct dns_rr
     uint16_t rdlength;    // Length of rdata                                                                                                                                                                                                                                                                                                                                                    
 };
 
-struct pcap_pktheadr;
+struct pcap_pkthdr;
 
 // DNS types                                                                                                                                                                                                        
 #define DNS_TYPE_A      0x0001   // IPv4 address                                                                                                                                                                           
@@ -58,6 +58,6 @@ int write_dns_label(unsigned char* buf, int offset, const char* label);
 bool create_mdns_query_msg(libnet_t* context, const device_info device, const uint32_t target_ip);
 bool mdns_discovery_send_m(libnet_t* context, const device_info device);
 void mdns_discovery_send_u(libnet_t* context, const device_info device);
-void mdns_discovery_rcv_callback(const unsigned char* packet, struct pcap_pktheadr* header, void* data);
+void mdns_discovery_rcv_callback(const unsigned char* packet, struct pcap_pkthdr* header, void* data);
 
 #endif
