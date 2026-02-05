@@ -102,7 +102,7 @@ void mdns_discovery_send_u(libnet_t* context, const device_info device)
         uint32_t target = htonl(host);
         if(!create_mdns_query_msg(context, device, target))
         {
-            fprintf(stderr, "Unable to create arp message for %s\n", inet_ntoa((struct in_addr){target}));
+            fprintf(stderr, "Unable to create mdns message for %s\n", inet_ntoa((struct in_addr){target}));
             continue;
         }
 

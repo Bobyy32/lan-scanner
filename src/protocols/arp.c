@@ -24,7 +24,7 @@ bool create_arp_message(libnet_t* context, const device_info source_device, cons
     return true;
 }
 
-void arp_scan(libnet_t* context, pcap_t* handle, const device_info device)
+void arp_scan(libnet_t* context, const device_info device)
 {
 
     uint32_t start = ntohl(device.network_id);
@@ -52,42 +52,11 @@ void arp_scan(libnet_t* context, pcap_t* handle, const device_info device)
         
         libnet_clear_packet(context);
     }
+}
 
-    fprintf(stdout, "\nListening for replies:\n");
-
-    struct timespec time_start, time_now;
-    clock_gettime(CLOCK_MONOTONIC, &time_start);
-    int wait_sec = 2;
-    while(1)
-    {
-        clock_gettime(CLOCK_MONOTONIC, &time_now);
-        double elapsed = (time_now.tv_sec - time_start.tv_sec) + (time_now.tv_nsec - time_start.tv_nsec) / 1000000000.0;
-
-        if (elapsed >= wait_sec)
-        {
-            break;
-        }
-
-        //fprintf(stdout, "Remaining Time: %2fs\n", wait_sec - elapsed);
-
-        struct pcap_pkthdr* header;
-        const unsigned char* packet = NULL;
-        int result = pcap_next_ex(handle, &header, &packet);
-        if(result != 1)
-        {
-            // No packet available in non-blocking mode, sleep briefly
-            if (result == 0)
-            {
-                usleep(10000); // 10ms
-            }
-            else
-            {
-                fprintf(stderr, "pcap_next_ex error: %d\n", result);
-            }
-            continue;
-        }
-
-        struct ether_header* ether_hdr = (struct ether_header*)packet;
+void arp_scan_rcv_callback(const unsigned char *packet, struct pcap_pkthdr *header, void *data)
+{
+    struct ether_header* ether_hdr = (struct ether_header*)packet;
         if(ntohs(ether_hdr->ether_type) == ETHERTYPE_ARP)
         {
             struct ether_arp* arp_hdr = (struct ether_arp*)(packet + sizeof(struct ether_header)); 
@@ -99,6 +68,4 @@ void arp_scan(libnet_t* context, pcap_t* handle, const device_info device)
                     arp_hdr->arp_sha[0], arp_hdr->arp_sha[1], arp_hdr->arp_sha[2], arp_hdr->arp_sha[3], arp_hdr->arp_sha[4], arp_hdr->arp_sha[5]);
             } 
         }
-    }
 }
-
