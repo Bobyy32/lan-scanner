@@ -45,7 +45,7 @@ bad:
 }
 
 void capture_loop(pcap_t *handle, int timeout, packet_handler handler_callback, void *data)
-{
+{    
     struct timespec time_start, time_now;
     clock_gettime(CLOCK_MONOTONIC, &time_start);
     int wait_sec = timeout;

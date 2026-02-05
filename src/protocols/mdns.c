@@ -12,23 +12,23 @@ int write_dns_label(unsigned char *buf, int offset, const char *label)
 bool create_mdns_query_msg(libnet_t *context, const device_info device, const uint32_t target_ip)
 {
     int offset = 0;
-    unsigned char payload[256];
+    unsigned char buffer[256];
     
     // Build dns query (_services._dns-sd._udp.local)
-    offset = write_dns_label(payload, offset, "_services");                                                                                                                                                                    
-    offset = write_dns_label(payload, offset, "_dns-sd");                                                                                                                                                                      
-    offset = write_dns_label(payload, offset, "_udp");                                                                                                                                                                         
-    offset = write_dns_label(payload, offset, "local");                                                                                                                                                                        
-    payload[offset++] = 0;
+    offset = write_dns_label(buffer, offset, "_services");                                                                                                                                                                    
+    offset = write_dns_label(buffer, offset, "_dns-sd");                                                                                                                                                                      
+    offset = write_dns_label(buffer, offset, "_udp");                                                                                                                                                                         
+    offset = write_dns_label(buffer, offset, "local");                                                                                                                                                                        
+    buffer[offset++] = 0;;
 
     struct dns_question question;
     question.qtype = htons(DNS_TYPE_PTR);
-    question.qclass = htons(DNS_CLASS_IN);
+    question.qclass = htons(DNS_CLASS_IN_QU);
 
-    memcpy(&payload[offset], &question, sizeof(question));
+    memcpy(&buffer[offset], &question, sizeof(question));
     offset += sizeof(question);
 
-    libnet_ptag_t dns = libnet_build_dnsv4(LIBNET_DNS_H, 0, 0, 1, 0, 0, 0, (uint8_t*)payload, (uint32_t)offset, context, 0);
+    libnet_ptag_t dns = libnet_build_dnsv4(LIBNET_DNS_H, 0, 0, 1, 0, 0, 0, (uint8_t*)buffer, (uint32_t)offset, context, 0);
     if (dns == -1)
     {
         fprintf(stderr, "Can't build DNS header: %s\n", libnet_geterror(context));

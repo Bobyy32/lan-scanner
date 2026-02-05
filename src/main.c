@@ -23,7 +23,7 @@ int main(int argc, char* argv[])
     }
 
 
-    pcap_t* handle = init_capture(my_device, "arp");
+    /* pcap_t* handle = init_capture(my_device, "arp");
     if (!handle)
     {
         fprintf(stderr, "Unable to initialize pcap catpure\n");
@@ -31,11 +31,11 @@ int main(int argc, char* argv[])
     }
 
     arp_scan(context, my_device);
-    capture_loop(handle, 15, arp_scan_rcv_callback, NULL);
+    capture_loop(handle, 15, arp_scan_rcv_callback, NULL); */
 
 
 
-    /* pcap_t* handle = init_capture(my_device, "udp port 5353");
+    pcap_t* handle = init_capture(my_device, "udp port 5353");
     if (!handle)
     {
         fprintf(stderr, "Unable to initialize pcap catpure\n");
@@ -43,7 +43,7 @@ int main(int argc, char* argv[])
     }
 
     mdns_discovery_send_u(context, my_device);
-    capture_loop(handle, 15, mdns_discovery_rcv_callback, NULL); */
+    capture_loop(handle, 15, mdns_discovery_rcv_callback, NULL);
     
     libnet_destroy(context);
     capture_close(handle);

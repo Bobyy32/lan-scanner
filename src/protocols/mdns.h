@@ -1,8 +1,6 @@
 #ifndef MDNS_H
 #define MDNS_H
 
-#define _DEFAULT_SOURCE
-
 #include "../misc.h"
 
 /*
@@ -47,7 +45,8 @@ struct pcap_pkthdr;
 #define DNS_TYPE_SRV    0x0021   // Service record                                                                                                                                                                         
                                                                                                                                                                                                                             
 // DNS classes                                                                                                                                                                                                      
-#define DNS_CLASS_IN    0x0001   // Internet                                                                                                                                                                               
+#define DNS_CLASS_IN    0x0001   // Internet
+#define DNS_CLASS_IN_QU 0x8001   // Respond via unicast                                                                                                                                                                               
                                                                                                                                                                                                                             
 // DNS flags                                                                                                                                                                                                               
 #define DNS_FLAG_QR     0x8000   // Query (0) or Response (1)                                                                                                                                                              
