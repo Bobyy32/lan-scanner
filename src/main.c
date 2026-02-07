@@ -2,6 +2,7 @@
 #include "capture.h"
 #include "protocols/arp.h"
 #include "protocols/mdns.h"
+#include "protocols/ssdp.h"
 
 int main(int argc, char* argv[])
 {
@@ -22,31 +23,14 @@ int main(int argc, char* argv[])
         goto bad;
     }
 
-
-    /* pcap_t* handle = init_capture(my_device, "arp");
-    if (!handle)
-    {
-        fprintf(stderr, "Unable to initialize pcap catpure\n");
-        goto bad;
-    }
-
-    arp_scan(context, my_device);
-    capture_loop(handle, 15, arp_scan_rcv_callback, NULL); */
-
-
-
-    pcap_t* handle = init_capture(my_device, "udp port 5353");
-    if (!handle)
-    {
-        fprintf(stderr, "Unable to initialize pcap catpure\n");
-        goto bad;
-    }
-
-    mdns_discovery_send_u(context, my_device);
-    capture_loop(handle, 15, mdns_discovery_rcv_callback, NULL);
     
+
+    ssdp_discovery_send(context, my_device);
+
+
+
     libnet_destroy(context);
-    capture_close(handle);
+    //capture_close(handle);
     return 0;
 
 bad:
@@ -55,7 +39,7 @@ bad:
         libnet_destroy(context);
     }
 
-    capture_close(handle);
+    //capture_close(handle);
 
     return (EXIT_FAILURE);
 }

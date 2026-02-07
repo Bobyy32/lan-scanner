@@ -70,24 +70,19 @@ bool mdns_discovery_send_m(libnet_t *context, const device_info device)
     if(!create_mdns_query_msg(context, device, inet_addr("224.0.0.251")))
     {
         fprintf(stderr, "Failed to create multicast mdns message\n");
-        goto bad;
+        return false;
     }
 
     int c = libnet_write(context);
     if (c == -1)
     {
         fprintf(stderr, "Packet size: %s\n", libnet_geterror(context));
-        goto bad;
+        return false;
     }
-    else
-    {
-        fprintf(stdout, "Successfuly Sent multicast mDNS request\n");
-    }
+
+    fprintf(stdout, "Successfuly Sent multicast mDNS request\n");
 
     return true;
-
-bad:
-    return false;
 }
 
 void mdns_discovery_send_u(libnet_t* context, const device_info device)
@@ -140,5 +135,4 @@ void mdns_discovery_rcv_callback(const unsigned char* packet, struct pcap_pkthdr
     }
 
     printf("[mDNS Response] From: %s | Answers: %d\n", inet_ntoa(ip_hdr->ip_src), num_answers);
-    
 }

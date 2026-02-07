@@ -1,21 +1,5 @@
 #include "misc.h"
 
-/* pcap_if_t discover_device()
-{
-    // Gets Default Network Interface and name
-    pcap_if_t* device_list;
-    char pcap_errbuff[PCAP_ERRBUF_SIZE];
-    pcap_findalldevs(&device_list, pcap_errbuff);
-    if (!device_list)
-    {
-        fprintf(stderr, "Couldn't find network device list: %s\n", pcap_errbuff);
-    }
-
-    fprintf(stdout, "Source Device: %s\n", device_list[0].name);
-
-    return device_list[0];
-} */
-
 bool get_device_info(device_info* device)
 {
 
