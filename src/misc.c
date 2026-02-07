@@ -59,7 +59,7 @@ bool get_device_info(device_info* device)
     }
     else
     {
-        printf("MAC Address: %02x:%02x:%02x:%02x:%02x:%02x\n", 
+        printf("MAC Address: %02x:%02x:%02x:%02x:%02x:%02x\n\n", 
             device->mac_address[0], device->mac_address[1], device->mac_address[2], device->mac_address[3], device->mac_address[4], device->mac_address[5]);
     }
 

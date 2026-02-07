@@ -58,12 +58,23 @@ bool ssdp_discovery_send(libnet_t *context, const device_info device)
         return false;
     }
 
-    fprintf(stdout, "Successfuly Sent ssdp discovery\n");
+    fprintf(stdout, "Successfuly Sent ssdp discovery\n\n");
 
     return true;
 }
 
 void ssdp_discovery_rcv_callback(const unsigned char *packet, struct pcap_pkthdr *header, void *data)
 {
-    
+    struct ip* ip_hdr = (struct ip*)(packet + sizeof(struct ether_header));
+    struct udphdr* udp_hdr = (struct udphdr*)(packet + (ip_hdr->ip_hl << 2) + sizeof(struct ether_header));
+    char* ssdp_data = (char *)(packet + sizeof(struct udphdr) + (ip_hdr->ip_hl << 2) + sizeof(struct ether_header));
+
+    unsigned int ssdp_len = ntohs(udp_hdr->len) - sizeof(udp_hdr);
+
+    char* buff = malloc(ssdp_len + 1);
+    memcpy(buff, ssdp_data, ssdp_len);
+    buff[ssdp_len] = '\0';
+
+    printf("SSDP Response From %s:\n%s\n", inet_ntoa(ip_hdr->ip_src), buff);
+    free(buff);
 }
