@@ -2,7 +2,7 @@
 #define ARP_H
 
 
-#include "../misc.h"
+#include "device.h""
 
 struct pcap_pkthdr;
 

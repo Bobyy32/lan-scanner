@@ -1,7 +1,7 @@
 #ifndef SSDP_H
 #define SSDP_H
 
-#include "../misc.h"
+#include "device.h""
 
 struct pcap_pkthdr;
 

@@ -1,4 +1,4 @@
-#include "misc.h"
+#include "device.h""
 #include "capture.h"
 #include "protocols/arp.h"
 #include "protocols/mdns.h"
@@ -38,11 +38,12 @@ int main(int argc, char* argv[])
         fprintf(stderr, "Unable to initialize pcap catpure\n");
         goto bad;
     }
+    
     ssdp_discovery_send(context, my_device);
     capture_loop(handle, 30, ssdp_discovery_rcv_callback, NULL);
 
     libnet_destroy(context);
-    //capture_close(handle);
+    capture_close(handle);
     return 0;
 
 bad:
@@ -51,7 +52,7 @@ bad:
         libnet_destroy(context);
     }
 
-    //capture_close(handle);
+    capture_close(handle);
 
     return (EXIT_FAILURE);
 }

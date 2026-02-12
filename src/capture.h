@@ -1,7 +1,7 @@
 #ifndef CAPTURE_H
-#define CATPURE_H
+#define CAPTURE_H
 
-#include "misc.h"
+#include "device.h""
 
 struct pcap_pkthdr;
 

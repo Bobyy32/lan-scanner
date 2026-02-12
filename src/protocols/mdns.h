@@ -1,7 +1,7 @@
 #ifndef MDNS_H
 #define MDNS_H
 
-#include "../misc.h"
+#include "device.h""
 
 /*
     Resources to check out:

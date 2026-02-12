@@ -1,5 +1,5 @@
-#ifndef MISC_H
-#define MISC_H
+#ifndef DEVICE_H
+#define DEVICE_H
 
 #include <stdio.h>
 #include <string.h>
@@ -37,14 +37,11 @@ typedef struct device_info
 
 } device_info;
 
-/*
-    Gets Device's name, ip, subnet, broadcast address, network id, and mac address.
-*/
+
 bool get_device_info(device_info* device);
 
-/*
-    Redundant. Use libnet_get_hwaddr instead to obtain MAC address. 
-*/
 bool get_MAC_addr(char *device, uint8_t* mac_out);
+
+
 
 #endif
