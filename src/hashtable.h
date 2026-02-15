@@ -1,32 +1,37 @@
 #ifndef HASH_TABLE_H
 #define HASH_TABLE_H
 
+#define HASH_FACTOR 
 
-struct Bucket
+#include <stdint.h>
+#include <stddef.h>
+#include <stdbool.h>
+
+typedef struct Bucket
 {
     const char* key;
     void* value;
-
-    struct Bucket* next;
-};
+}bucket;
 
 struct HashTable
 {
-    unsigned int capacity;
+    size_t capacity;
     unsigned int num_buckets;
-    float load_factor;
 
-    Bucket** table;
+    bucket** table;
 };
 
 
 
-unsigned int ht_hash(const char* data);
+static uint64_t ht_hash(const char* data);
 
-HashTable* ht_create();
-void ht_destroy();
+struct HashTable* ht_create();
+void ht_destroy(struct HashTable* ht);
 
-void ht_set();
-void ht_get();
+void* ht_get(struct HashTable* ht, const char* key);
+void ht_set(struct HashTable* ht, const char* key, void* value);
+static void ht_set_helper(struct HashTable* ht, const char* key, void* value);
+
+static bool ht_resize(struct HashTable* ht);
 
 #endif
