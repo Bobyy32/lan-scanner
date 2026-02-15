@@ -1,4 +1,4 @@
-#include "device.h""
+#include "device.h"
 
 bool get_device_info(device_info* device)
 {

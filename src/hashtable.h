@@ -12,7 +12,9 @@ struct Bucket
 
 struct HashTable
 {
-    unsigned int size;
+    unsigned int capacity;
+    unsigned int num_buckets;
+    float load_factor;
 
     Bucket** table;
 };
