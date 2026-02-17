@@ -98,3 +98,33 @@ bool get_MAC_addr(char *device, uint8_t* mac_out)
 
     return true;
 }
+
+char *get_MAC_addr_str(char *device)
+{
+    char path[64];
+    snprintf(path, sizeof(path), "/sys/class/net/%s/address", device);
+
+    char* mac_addr = (char*)malloc(18);
+    if (mac_addr == NULL)
+    {
+        return NULL;
+    }
+
+    FILE* f = fopen(path, "r");
+    if (f == NULL)
+    {
+        fprintf(stderr, "Failed to open, %s\n", path);
+        return NULL;
+    }
+
+    if(fgets(mac_addr, 18, f) == NULL)
+    {
+        fclose(f);
+        fprintf(stderr, "Failed to get MAC address\n");
+        return NULL;
+    }
+
+    fclose(f);
+
+    return mac_addr;
+}

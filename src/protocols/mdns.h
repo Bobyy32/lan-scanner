@@ -2,6 +2,7 @@
 #define MDNS_H
 
 #include "../device.h"
+#include "../hashtable.h"
 
 /*
     Resources to check out:

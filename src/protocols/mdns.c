@@ -114,8 +114,9 @@ void mdns_discovery_send_u(libnet_t* context, const device_info device)
 
 void mdns_discovery_rcv_callback(const unsigned char* packet, struct pcap_pkthdr* header, void* data)
 {
-    // https://stackoverflow.com/questions/51376598/c-libpcap-api-extracting-dns-query
 
+    struct HashTable* ht = (struct HashTable*)data;
+    
     //struct ether_header* ether_hdr = (struct ether_header*)packet;
     struct ip* ip_hdr = (struct ip*)(packet + sizeof(struct ether_header));
     int ip_hdr_len = ip_hdr->ip_hl * 4;

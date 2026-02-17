@@ -56,6 +56,7 @@ void arp_scan(libnet_t* context, const device_info device)
 
 void arp_scan_rcv_callback(const unsigned char *packet, struct pcap_pkthdr *header, void *data)
 {
+    struct HashTable* ht = (struct HashTable*)data;
     struct ether_header* ether_hdr = (struct ether_header*)packet;
         if(ntohs(ether_hdr->ether_type) == ETHERTYPE_ARP)
         {
@@ -63,9 +64,26 @@ void arp_scan_rcv_callback(const unsigned char *packet, struct pcap_pkthdr *head
             
             if (ntohs(arp_hdr->ea_hdr.ar_op) == ARPOP_REPLY)
             {
-                printf("[Reply] IP: %s | MAC Address: %02x:%02x:%02x:%02x:%02x:%02x\n",
+                /* printf("[Reply] IP: %s | MAC Address: %02x:%02x:%02x:%02x:%02x:%02x\n",
                     inet_ntoa(*(struct in_addr*)arp_hdr->arp_spa),
                     arp_hdr->arp_sha[0], arp_hdr->arp_sha[1], arp_hdr->arp_sha[2], arp_hdr->arp_sha[3], arp_hdr->arp_sha[4], arp_hdr->arp_sha[5]);
+                 */  
+
+                if (ht_get(ht, inet_ntoa(*(struct in_addr*)arp_hdr->arp_spa)))
+                {
+                    return;
+                }
+
+
+                device_entry* value = (device_entry*)calloc(1, sizeof(device_entry));
+                if (value == NULL)
+                {
+                    return;
+                }
+
+                snprintf(value->mac, 18, "%02x:%02x:%02x:%02x:%02x:%02x", arp_hdr->arp_sha[0], arp_hdr->arp_sha[1], arp_hdr->arp_sha[2], arp_hdr->arp_sha[3], arp_hdr->arp_sha[4], arp_hdr->arp_sha[5]);
+                
+                ht_set(ht, inet_ntoa(*(struct in_addr*)arp_hdr->arp_spa), (void*)value);
             } 
         }
 }

@@ -16,7 +16,7 @@ pcap_t *init_capture(device_info device, const char *filter)
         goto bad;
     }
 
-    struct bpf_program fp;
+    struct bpf_program fp = {0};
     if (pcap_compile(handle, &fp, filter, 0, device.ipv4_address) == -1)
     {
         fprintf(stderr, "Couldn't parse filter mDNS: %s\n", pcap_geterr(handle));
@@ -37,9 +37,12 @@ pcap_t *init_capture(device_info device, const char *filter)
         goto bad;
     }
 
+    pcap_freecode(&fp);
+
     return handle;
 
 bad:
+    pcap_freecode(&fp);
     capture_close(handle);
     return NULL;
 }
@@ -86,4 +89,12 @@ void capture_close(pcap_t *handle)
     {
         pcap_close(handle);
     }
+}
+
+void change_filter(device_info device, pcap_t *handle, char *new_filter)
+{
+    struct bpf_program fp;
+    pcap_compile(handle, &fp, new_filter, 0, device.ipv4_address);
+    pcap_setfilter(handle, &fp);
+    pcap_freecode(&fp);
 }

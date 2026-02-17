@@ -26,7 +26,7 @@
     mac address
 */
 
-typedef struct device_info
+typedef struct DeviceInfo
 {
     char name[IF_NAMESIZE]; // Name of network interface
     uint32_t ipv4_address;  // Addresses stored in network byte order
@@ -37,10 +37,21 @@ typedef struct device_info
 
 } device_info;
 
+typedef struct DeviceEntry
+{
+    char mac[18];       // MAC addres
+    char* hostname;     // hostname from mdns
+    char* ssdp_server;  // server header from ssdp
+    char* ssdp_location; // location header from ssdp
+} device_entry;
+
 
 bool get_device_info(device_info* device);
 
 bool get_MAC_addr(char *device, uint8_t* mac_out);
+
+// remember to free returned val
+char* get_MAC_addr_str(char* device);
 
 
 

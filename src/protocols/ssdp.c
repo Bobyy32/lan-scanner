@@ -65,16 +65,50 @@ bool ssdp_discovery_send(libnet_t *context, const device_info device)
 
 void ssdp_discovery_rcv_callback(const unsigned char *packet, struct pcap_pkthdr *header, void *data)
 {
+    struct HashTable* ht = (struct HashTable*)data;
+
     struct ip* ip_hdr = (struct ip*)(packet + sizeof(struct ether_header));
     struct udphdr* udp_hdr = (struct udphdr*)(packet + (ip_hdr->ip_hl << 2) + sizeof(struct ether_header));
     char* ssdp_data = (char *)(packet + sizeof(struct udphdr) + (ip_hdr->ip_hl << 2) + sizeof(struct ether_header));
 
-    unsigned int ssdp_len = ntohs(udp_hdr->len) - sizeof(udp_hdr);
+    unsigned int ssdp_len = ntohs(udp_hdr->len) - sizeof(struct udphdr);
+
+
+    device_entry* value = (device_entry*)ht_get(ht, inet_ntoa(ip_hdr->ip_src));
+    if (value == NULL)
+    {
+        value = (device_entry*)calloc(1, sizeof(device_entry));
+        if (value == NULL)
+        {
+            return;
+        }
+        ht_set(ht, inet_ntoa(ip_hdr->ip_src), value);
+    }
 
     char* buff = malloc(ssdp_len + 1);
     memcpy(buff, ssdp_data, ssdp_len);
     buff[ssdp_len] = '\0';
 
-    printf("SSDP Response From %s:\n%s\n", inet_ntoa(ip_hdr->ip_src), buff);
+    // printf("SSDP Response From %s:\n%s\n", inet_ntoa(ip_hdr->ip_src), buff);
+
+    char* line = strtok(buff, "\r\n");
+    while (line)
+    {
+        char tmp[256] = { 0 };
+        if (sscanf(line, "SERVER: %[^\r\n]", tmp) == 1)
+        {
+            free(value->ssdp_server);
+            value->ssdp_server = strdup(tmp);
+        }
+        else if (sscanf(line, "LOCATION: %[^\n]", tmp) == 1)
+        {
+            free(value->ssdp_location);
+            value->ssdp_location = strdup(tmp);
+        }
+
+        line = strtok(NULL, "\r\n");
+    }
+
     free(buff);
+
 }

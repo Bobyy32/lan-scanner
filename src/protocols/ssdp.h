@@ -2,6 +2,7 @@
 #define SSDP_H
 
 #include "../device.h"
+#include "../hashtable.h"
 
 struct pcap_pkthdr;
 

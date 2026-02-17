@@ -3,9 +3,13 @@
 
 #define HASH_FACTOR 
 
+#include <stdlib.h>
 #include <stdint.h>
 #include <stddef.h>
 #include <stdbool.h>
+#include <string.h>
+
+#include "device.h"
 
 typedef struct Bucket
 {
@@ -21,17 +25,10 @@ struct HashTable
     bucket** table;
 };
 
-
-
-static uint64_t ht_hash(const char* data);
-
 struct HashTable* ht_create();
 void ht_destroy(struct HashTable* ht);
 
 void* ht_get(struct HashTable* ht, const char* key);
 void ht_set(struct HashTable* ht, const char* key, void* value);
-static void ht_set_helper(struct HashTable* ht, const char* key, void* value);
-
-static bool ht_resize(struct HashTable* ht);
 
 #endif

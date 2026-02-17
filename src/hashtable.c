@@ -1,5 +1,8 @@
 #include "hashtable.h"
 
+static void ht_set_helper(struct HashTable* ht, const char* key, void* value);
+static bool ht_resize(struct HashTable* ht);
+
 uint64_t ht_hash(const char *data)
 {
     // start with offset
@@ -31,7 +34,19 @@ void ht_destroy(struct HashTable *ht)
 {
     for (int i = 0; i < ht->capacity; ++i)
     {
-        free((void*)ht->table[i]->key);
+        if (ht->table[i] != NULL)
+        {
+            free((void*)ht->table[i]->key);
+
+            device_entry* entry = (device_entry*)ht->table[i]->value; 
+
+            free(entry->hostname);
+            free(entry->ssdp_server);
+            free(entry->ssdp_location);
+            free(entry);
+
+            free(ht->table[i]);
+        }
     }
 
     free(ht->table);
@@ -95,7 +110,7 @@ static void ht_set_helper(struct HashTable *ht, const char *key, void *value)
     new->key = strdup(key);
     new->value = value;
     ht->table[index] = new;
-    ++ht->num_buckets;
+    ht->num_buckets++;
 }
 
 static bool ht_resize(struct HashTable *ht)
