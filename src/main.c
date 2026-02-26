@@ -33,18 +33,15 @@ int main(int argc, char* argv[])
     }
 
     /*
-        ARP scan
+        MDNS
     */
     char filter[256] = { 0 };
-    char* mac_addr = get_MAC_addr_str(my_device.name);
     snprintf(
-        filter,
+        filter, 
         sizeof(filter),
-        "arp and not ether src host %s",
-        mac_addr);
-
-    free(mac_addr);
-    mac_addr = NULL;
+        "udp port 5353 and not src host %s",
+        inet_ntoa((struct in_addr) {my_device.ipv4_address})
+    );
 
     pcap_t* handle = init_capture(my_device, filter);
     if (!handle)
@@ -53,56 +50,28 @@ int main(int argc, char* argv[])
         goto bad;
     }
 
-    arp_scan(context, my_device);
-    capture_loop(handle, 5, arp_scan_rcv_callback, (void*)ht);
-    
-    /*
-        MDNS
-    */
-    memset(filter, 0, 256);
-    
-    snprintf(
-        filter, 
-        sizeof(filter),
-        "udp port 5353 and not src host %s",
-        inet_ntoa((struct in_addr) {my_device.ipv4_address})
-    );
-
-    change_filter(my_device, handle, filter);
     mdns_discovery_send_m(context, my_device);
     capture_loop(handle, 5, mdns_discovery_rcv_callback, NULL);
 
-    /*
-        SSDP
-    */
-    memset(filter, 0, 256);
-
-    snprintf(
-        filter,
-        sizeof(filter),
-        "udp port 1900 and not src host %s",
-        inet_ntoa((struct in_addr) {my_device.ipv4_address})
-    );
-
-    change_filter(my_device, handle, filter);
-    
-    ssdp_discovery_send(context, my_device);
-    capture_loop(handle, 5, ssdp_discovery_rcv_callback, (void*)ht);
-
-    for (size_t i = 0; i < ht->capacity; ++i)
-    {
+    for (size_t i = 0; i < ht->capacity; ++i)                                                                                                                                                                        
+    {                                                                                                                                                                                                                
         if (ht->table[i])
         {
+            device_entry* entry = (device_entry*)ht->table[i]->value;
+            printf("IP: %s\n", ht->table[i]->key);
 
-            device_entry* val = (device_entry*)ht->table[i]->value;
-            printf("%s -> %s\n", ht->table[i]->key,val->mac);
-            if (val->ssdp_server)
+            if (entry->ssdp_server)
+                printf("  SSDP Server:   %s\n", entry->ssdp_server);
+            if (entry->ssdp_location)
+                printf("  SSDP Location: %s\n", entry->ssdp_location);
+
+            if (entry->service_count > 0)
             {
-                printf("Server: %s\n", val->ssdp_server);
-            }
-            if (val->ssdp_location)
-            {
-                printf("Location: %s\n", val->ssdp_location);
+                printf("  mDNS Services:\n");
+                for (uint8_t j = 0; j < entry->service_count; ++j)
+                {
+                    printf("    [%d] type: %s\n", j, entry->services[j].type ? entry->services[j].type : "unknown");
+                }
             }
 
             putc('\n', stdout);
