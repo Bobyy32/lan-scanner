@@ -329,7 +329,7 @@ bool parse_mdns_response(struct HashTable* ht, char* ip_str, const void *data, s
         for (uint8_t i = 0; i < value->service_count; ++i)
         {
             free(value->services[i].type);
-            free(value->services[i].name);
+            //free(value->services[i].name);
         }
         free(value->services);
     }
