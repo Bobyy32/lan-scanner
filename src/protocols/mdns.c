@@ -9,20 +9,25 @@ int write_dns_label(unsigned char *buf, int offset, const char *label)
     return offset + len;
 }
 
-bool create_mdns_query_msg(libnet_t *context, const device_info device, const uint32_t target_ip)
+bool create_mdns_query_msg(libnet_t *context, const device_info device, const uint32_t target_ip, const char* query_str, uint16_t query_type)
 {
     int offset = 0;
     unsigned char buffer[256];
     
     // Build dns query (_services._dns-sd._udp.local)
-    offset = write_dns_label(buffer, offset, "_services");                                                                                                                                                                    
-    offset = write_dns_label(buffer, offset, "_dns-sd");                                                                                                                                                                      
-    offset = write_dns_label(buffer, offset, "_udp");                                                                                                                                                                         
-    offset = write_dns_label(buffer, offset, "local");                                                                                                                                                                        
-    buffer[offset++] = 0;;
+    char* query_str_cpy = strdup(query_str);
+    char* pch = strtok(query_str_cpy, ".");
+    while (pch != NULL)
+    {
+        offset = write_dns_label(buffer, offset, pch); 
+        pch = strtok(NULL, ".");
+    }                                                                                                                                                            
+    buffer[offset++] = 0;
+
+    free(query_str_cpy);
 
     struct dns_question question;
-    question.qtype = htons(DNS_TYPE_PTR);
+    question.qtype = htons(query_type);
     question.qclass = htons(DNS_CLASS_IN_QU);
 
     memcpy(&buffer[offset], &question, sizeof(question));
@@ -67,7 +72,7 @@ bool mdns_discovery_send_m(libnet_t *context, const device_info device)
 {
 
     // multicast ip
-    if(!create_mdns_query_msg(context, device, inet_addr("224.0.0.251")))
+    if(!create_mdns_query_msg(context, device, inet_addr("224.0.0.251"), "_services._dns-sd._udp.local", DNS_TYPE_PTR))
     {
         fprintf(stderr, "Failed to create multicast mdns message\n");
         return false;
@@ -95,7 +100,7 @@ void mdns_discovery_send_u(libnet_t* context, const device_info device)
         
         //printf("%u.%u.%u.%u\n", (host >> 24) & 0xFF, (host >> 16) & 0xFF, (host >> 8) & 0xFF, host & 0xFF);
         uint32_t target = htonl(host);
-        if(!create_mdns_query_msg(context, device, target))
+        if(!create_mdns_query_msg(context, device, target, "_services._dns-sd._udp.local", DNS_TYPE_PTR))
         {
             fprintf(stderr, "Unable to create mdns message for %s\n", inet_ntoa((struct in_addr){target}));
             continue;
@@ -117,10 +122,9 @@ void mdns_discovery_rcv_callback(const unsigned char* packet, struct pcap_pkthdr
 
     struct HashTable* ht = (struct HashTable*)data;
     
-    //struct ether_header* ether_hdr = (struct ether_header*)packet;
     struct ip* ip_hdr = (struct ip*)(packet + sizeof(struct ether_header));
     int ip_hdr_len = ip_hdr->ip_hl * 4;
-    //struct udphdr* udp_hdr = (struct udphdr*)(packet + ip_hdr_len + sizeof(struct ether_header));
+    struct udphdr* udp_hdr = (struct udphdr*)(packet + ip_hdr_len + sizeof(struct ether_header));
     struct dns_header* dns_hdr = (struct dns_header*)(packet + sizeof(struct udphdr) + ip_hdr_len + sizeof(struct ether_header));
     
     uint16_t flags = ntohs(dns_hdr->flags);
@@ -135,5 +139,203 @@ void mdns_discovery_rcv_callback(const unsigned char* packet, struct pcap_pkthdr
         return;
     }
 
-    printf("[mDNS Response] From: %s | Answers: %d\n", inet_ntoa(ip_hdr->ip_src), num_answers);
+
+    size_t mdns_size = ntohs(udp_hdr->len) - 8;
+
+    bool res = parse_mdns_response(ht, inet_ntoa(ip_hdr->ip_src),(void*)dns_hdr, mdns_size);
+
+    if (res == false)
+    {
+        fprintf(stderr, "Failed to parse mdns response!\n");
+    }
+}
+
+bool skip_mdns_name(const void *data, size_t *offset, size_t size)
+{
+    while(*offset < size && (*((unsigned char*)data + (*offset))) != 0x00)
+    {
+        if ((*((unsigned char*)data + (*offset)) & 0xC0) == 0xC0)
+        {
+            ++(*offset);
+            break;
+        }
+        size_t len = (size_t)(*((unsigned char*)data + (*offset)));
+        (*offset) += 1 + len;
+    }
+    ++(*offset);
+
+    if (*offset >= size)
+    {
+        return false;
+    }
+
+    return true;
+}
+
+size_t extract_mdns_name(const void *data, char* out_buffer, size_t offset, size_t size)
+{
+    bool is_compression = false;
+    size_t buff_offset = 0;
+    size_t save_offset = 0;
+    size_t original_offset = offset;
+    char buffer[256] = { 0 };
+
+    while(offset < size && (*((unsigned char*)data + offset)) != 0x00)
+    {
+        if ((*((unsigned char*)data + offset) & 0xC0) == 0xC0)
+        {
+            ++offset;
+            save_offset = offset + 1;
+            offset = (size_t)(*((unsigned char*)data + offset));
+            is_compression = true;
+        }
+
+        size_t len = (size_t)(*((unsigned char*)data + offset));
+        size_t old_offset = offset;
+        offset += 1 + len;
+
+        // copy text
+        memcpy(buffer + buff_offset, (void*)((unsigned char*)data + old_offset + 1), len);
+        buffer[buff_offset + len] = '.';
+        buff_offset = buff_offset + len + 1;
+    }
+
+    if (offset >= size)
+    {
+        return 0;
+    }
+    
+    if (buff_offset == 0)
+    {
+        buffer[buff_offset] = '\0';
+    }
+    else
+    {
+        buffer[buff_offset - 1] = '\0';
+    }
+    ++offset;
+
+    strcpy(out_buffer, buffer);
+
+    return is_compression ? save_offset - original_offset : offset - original_offset; 
+}
+
+
+char *record_parse_ptr(const void *data, size_t offset, size_t size, size_t r_length)
+{
+    char buff[256] = {0};
+
+    if ((r_length <= size - offset) && (r_length >= 2))
+    {
+        if (extract_mdns_name(data, buff, offset, size) == 0)
+        {
+            return NULL;
+        }
+    }
+    else
+    {
+        return NULL;
+    }
+    
+    return strdup(buff);
+}
+
+
+bool parse_mdns_response(struct HashTable* ht, char* ip_str, const void *data, size_t size)
+{
+    struct dns_header* header = (struct dns_header*)data; 
+
+    size_t offset = 12; // skip header
+
+    // skip questions sections
+    for (uint16_t i = 0; i < ntohs(header->qdcount); ++i)
+    {
+        skip_mdns_name(data, &offset, size);
+
+        offset += 4;
+    }
+
+    mdns_service* services = NULL;
+    uint8_t service_count = 0;
+    // parse answer sections
+    for (uint16_t i = 0; i < ntohs(header->ancount); ++i)
+    {
+        if (!skip_mdns_name(data, &offset, size))
+        {
+            break;
+        }
+
+        uint16_t rtype = ntohs(*(uint16_t*)((unsigned char*)data + offset));
+        uint16_t rclass  = ntohs(*(uint16_t*)((unsigned char*)data + offset + 2));
+        uint32_t ttl = ntohl(*(uint32_t*)((unsigned char*)data + offset + 4));
+        uint16_t rdlen = ntohs(*(uint16_t*)((unsigned char*)data + offset + 8));
+
+        offset += 10;
+
+        switch (rtype)
+        {
+            case DNS_TYPE_PTR:
+                {
+                    char* service_type = record_parse_ptr(data, offset, size, rdlen);
+
+                    if (service_type)
+                    {
+                        mdns_service* temp  = (mdns_service*)realloc(services, (service_count + 1) * sizeof(mdns_service));
+                        if (temp)
+                        {
+                            services = temp;
+                            services[service_count++].type = service_type;
+                        }
+                        else
+                        {
+                            free(service_type);
+                        }
+                    }
+                }
+
+                break;
+            case DNS_TYPE_SRV:
+                
+
+                break;
+        }
+
+        offset += rdlen;
+    }
+
+    if (service_count == 0)
+    {
+        if (services)
+        {
+            free(services);
+        }
+        return false;
+    }
+
+    device_entry* value = (device_entry*)ht_get(ht, ip_str);
+    if (value == NULL)
+    {
+        value = (device_entry*)calloc(1, sizeof(device_entry));
+        if (value == NULL)
+        {
+            free(services);
+            return false;
+        }
+        ht_set(ht, ip_str, value);
+    }
+
+    if (value->services)
+    {
+        for (uint8_t i = 0; i < value->service_count; ++i)
+        {
+            free(value->services[i].type);
+            free(value->services[i].name);
+        }
+        free(value->services);
+    }
+    
+    value->services = services;
+    value->service_count = service_count;
+
+    return true;
 }

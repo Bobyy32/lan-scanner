@@ -26,6 +26,13 @@
     mac address
 */
 
+typedef struct MdnsService
+{
+    char* name;
+    char* type;
+    uint16_t port;
+} mdns_service;
+
 typedef struct DeviceInfo
 {
     char name[IF_NAMESIZE]; // Name of network interface
@@ -40,9 +47,10 @@ typedef struct DeviceInfo
 typedef struct DeviceEntry
 {
     char mac[18];       // MAC addres
-    char* hostname;     // hostname from mdns
     char* ssdp_server;  // server header from ssdp
     char* ssdp_location; // location header from ssdp
+    mdns_service* services;
+    uint8_t service_count;
 } device_entry;
 
 

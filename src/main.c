@@ -8,12 +8,18 @@
 int main(int argc, char* argv[])
 {
     struct HashTable* ht = ht_create();
+    if (ht == NULL)
+    {
+        fprintf(stderr, "Unable to create hash table!\n");
+        return (EXIT_FAILURE);
+    }
 
     // Get default device details
     device_info my_device = { 0 };
     if(!get_device_info(&my_device))
     {
         fprintf(stderr, "Unable to get device info!\n");
+        ht_destroy(ht);
         return (EXIT_FAILURE);
     }
 
@@ -26,6 +32,9 @@ int main(int argc, char* argv[])
         goto bad;
     }
 
+    /*
+        ARP scan
+    */
     char filter[256] = { 0 };
     char* mac_addr = get_MAC_addr_str(my_device.name);
     snprintf(
@@ -46,7 +55,26 @@ int main(int argc, char* argv[])
 
     arp_scan(context, my_device);
     capture_loop(handle, 5, arp_scan_rcv_callback, (void*)ht);
+    
+    /*
+        MDNS
+    */
+    memset(filter, 0, 256);
+    
+    snprintf(
+        filter, 
+        sizeof(filter),
+        "udp port 5353 and not src host %s",
+        inet_ntoa((struct in_addr) {my_device.ipv4_address})
+    );
 
+    change_filter(my_device, handle, filter);
+    mdns_discovery_send_m(context, my_device);
+    capture_loop(handle, 5, mdns_discovery_rcv_callback, NULL);
+
+    /*
+        SSDP
+    */
     memset(filter, 0, 256);
 
     snprintf(

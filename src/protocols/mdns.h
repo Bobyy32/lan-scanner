@@ -53,11 +53,16 @@ struct pcap_pkthdr;
 #define DNS_FLAG_QR     0x8000   // Query (0) or Response (1)                                                                                                                                                              
 #define DNS_FLAG_AA     0x0400   // Authoritative Answer
 
+
 int write_dns_label(unsigned char* buf, int offset, const char* label);
 
-bool create_mdns_query_msg(libnet_t* context, const device_info device, const uint32_t target_ip);
+bool create_mdns_query_msg(libnet_t* context, const device_info device, const uint32_t target_ip, const char* query_str, uint16_t query_type);
 bool mdns_discovery_send_m(libnet_t* context, const device_info device);
 void mdns_discovery_send_u(libnet_t* context, const device_info device);
 void mdns_discovery_rcv_callback(const unsigned char* packet, struct pcap_pkthdr* header, void* data);
+bool skip_mdns_name(const void* data, size_t* offset, size_t size);
+size_t extract_mdns_name(const void *data, char* out_buffer, size_t offset, size_t size);
+bool parse_mdns_response(struct HashTable* ht, char* ip_str, const void *data, size_t size);
+char* record_parse_ptr(const void *data, size_t offset, size_t size, size_t r_length);
 
 #endif

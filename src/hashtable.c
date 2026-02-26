@@ -40,11 +40,20 @@ void ht_destroy(struct HashTable *ht)
 
             device_entry* entry = (device_entry*)ht->table[i]->value; 
 
-            free(entry->hostname);
             free(entry->ssdp_server);
             free(entry->ssdp_location);
-            free(entry);
 
+            if (entry->services)
+            {
+                for (uint8_t j = 0; j < entry->service_count; ++j)
+                {
+                    free(entry->services[j].type);
+                    free(entry->services[j].name);
+                }
+                free(entry->services);
+            }
+
+            free(entry);
             free(ht->table[i]);
         }
     }
