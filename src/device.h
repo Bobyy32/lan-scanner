@@ -26,12 +26,29 @@
     mac address
 */
 
+typedef struct Capture_Hash_Table
+{
+    struct HashTable* ht;
+    struct HashTable* srv_table;
+}   capture_ht;
+
+typedef struct MdnsService
+{
+    char* instance_name;    // Bobyy's Mac mini._smb._tcp.local
+    char* service_type;     // _smb._tcp.local
+    char* host_name;        // shahs-mac-mini.local
+    uint16_t port;
+} mdns_service;
+
+/*
 typedef struct MdnsService
 {
     char* name;
     char* type;
     uint16_t port;
 } mdns_service;
+
+*/
 
 typedef struct DeviceInfo
 {

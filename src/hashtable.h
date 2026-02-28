@@ -26,7 +26,7 @@ struct HashTable
 };
 
 struct HashTable* ht_create();
-void ht_destroy(struct HashTable* ht);
+void ht_destroy(struct HashTable* ht, void (*destroy_value)(void*));
 
 void* ht_get(struct HashTable* ht, const char* key);
 void ht_set(struct HashTable* ht, const char* key, void* value);

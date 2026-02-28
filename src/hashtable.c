@@ -30,30 +30,15 @@ struct HashTable *ht_create()
     return ht;
 }
 
-void ht_destroy(struct HashTable *ht)
+void ht_destroy(struct HashTable *ht, void (*destroy_value)(void*))
 {
     for (int i = 0; i < ht->capacity; ++i)
     {
         if (ht->table[i] != NULL)
         {
             free((void*)ht->table[i]->key);
-
-            device_entry* entry = (device_entry*)ht->table[i]->value; 
-
-            free(entry->ssdp_server);
-            free(entry->ssdp_location);
-
-            if (entry->services)
-            {
-                for (uint8_t j = 0; j < entry->service_count; ++j)
-                {
-                    free(entry->services[j].type);
-                    free(entry->services[j].name);
-                }
-                free(entry->services);
-            }
-
-            free(entry);
+            if (destroy_value)
+                destroy_value(ht->table[i]->value);
             free(ht->table[i]);
         }
     }

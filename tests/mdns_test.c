@@ -2,22 +2,27 @@
 #include "../src/capture.h"
 #include "../src/protocols/mdns.h"
 
-
 int main(void)
 {
     struct HashTable* ht = ht_create();
-    if (ht == NULL)
+    struct HashTable* srv_ht = ht_create();
+    if (ht == NULL || srv_ht == NULL)
     {
         fprintf(stderr, "Unable to create hash table!\n");
+        ht_destroy(ht, device_entry_destroy);
+        ht_destroy(srv_ht, pending_srv_destroy);
         return (EXIT_FAILURE);
     }
+
+    capture_ht ct = {.ht = ht, .srv_table = srv_ht};
 
     // Get default device details
     device_info my_device = { 0 };
     if(!get_device_info(&my_device))
     {
         fprintf(stderr, "Unable to get device info!\n");
-        ht_destroy(ht);
+        ht_destroy(ht, device_entry_destroy);
+        ht_destroy(srv_ht, pending_srv_destroy);
         return (EXIT_FAILURE);
     }
 
@@ -25,33 +30,29 @@ int main(void)
         MDNS
     */
     char pcap_errbuff[PCAP_ERRBUF_SIZE];
-    pcap_t* handle = pcap_open_offline("tests/pcap/mDNS-CC3000.pcapng", pcap_errbuff);
+    pcap_t* handle = pcap_open_offline("tests/pcap/logingintoIS.pcap", pcap_errbuff);
     if (!handle)
     {
-        fprintf(stderr, "Unable to initialize pcap: %s\n", pcap_errbuff); 
+        fprintf(stderr, "Unable to initialize pcap: %s\n", pcap_errbuff);
         goto bad;
     }
-
-    int dlt = pcap_datalink(handle);
-    printf("Link type: %d (%s)\n", dlt, pcap_datalink_val_to_name(dlt));
 
     struct pcap_pkthdr* header;
     const unsigned char* packet = NULL;
     unsigned int packet_count = 0;
     while(pcap_next_ex(handle, &header, &packet))
-    {   
-        packet_count++;                                                                                                                                         
-        mdns_discovery_rcv_callback(packet, header, (void*)ht);
+    {
+        packet_count++;
+        mdns_discovery_rcv_callback(packet, header, (void*)&ct);
 
-        if (packet_count >= 500)
+        if (packet_count >= 10000)
         {
             break;
         }
     }
 
-
-    for (size_t i = 0; i < ht->capacity; ++i)                                                                                                                                                                        
-    {                                                                                                                                                                                                                
+    for (size_t i = 0; i < ht->capacity; ++i)
+    {
         if (ht->table[i])
         {
             device_entry* entry = (device_entry*)ht->table[i]->value;
@@ -67,7 +68,12 @@ int main(void)
                 printf("  mDNS Services:\n");
                 for (uint8_t j = 0; j < entry->service_count; ++j)
                 {
-                    printf("    [%d] type: %s\n", j, entry->services[j].type ? entry->services[j].type : "unknown");
+                     printf("    [%d] type: %s | name: %s | host: %s | port: %u\n",
+                        j,
+                        entry->services[j].service_type ? entry->services[j].service_type : "unknown",
+                        entry->services[j].instance_name ? entry->services[j].instance_name : "unknown",
+                        entry->services[j].host_name ? entry->services[j].host_name : "unknown",
+                        entry->services[j].port);
                 }
             }
 
@@ -75,15 +81,16 @@ int main(void)
         }
     }
 
-    ht_destroy(ht);
+    ht_destroy(ht, device_entry_destroy);
+    ht_destroy(srv_ht, pending_srv_destroy);
     capture_close(handle);
     return 0;
 
 bad:
     if (ht)
-    {
-        ht_destroy(ht);
-    }
+        ht_destroy(ht, device_entry_destroy);
+    if (srv_ht)
+        ht_destroy(srv_ht, pending_srv_destroy);
 
     capture_close(handle);
 

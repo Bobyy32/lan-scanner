@@ -120,7 +120,7 @@ void mdns_discovery_send_u(libnet_t* context, const device_info device)
 void mdns_discovery_rcv_callback(const unsigned char* packet, struct pcap_pkthdr* header, void* data)
 {
 
-    struct HashTable* ht = (struct HashTable*)data;
+    capture_ht* ht = (capture_ht*)data;
     
     struct ip* ip_hdr = (struct ip*)(packet + sizeof(struct ether_header));
     int ip_hdr_len = ip_hdr->ip_hl * 4;
@@ -142,11 +142,11 @@ void mdns_discovery_rcv_callback(const unsigned char* packet, struct pcap_pkthdr
 
     size_t mdns_size = ntohs(udp_hdr->len) - 8;
 
-    bool res = parse_mdns_response(ht, inet_ntoa(ip_hdr->ip_src),(void*)dns_hdr, mdns_size);
+    bool res = parse_mdns_response(ht->ht, ht->srv_table, inet_ntoa(ip_hdr->ip_src),(void*)dns_hdr, mdns_size);
 
     if (res == false)
     {
-        fprintf(stderr, "Failed to parse mdns response!\n");
+        //fprintf(stderr, "Failed to parse mdns response!\n");
     }
 }
 
@@ -184,13 +184,31 @@ size_t extract_mdns_name(const void *data, char* out_buffer, size_t offset, size
     {
         if ((*((unsigned char*)data + offset) & 0xC0) == 0xC0)
         {
+            size_t hi = (size_t)(*((unsigned char*)data + offset) & 0x3F);
             ++offset;
-            save_offset = offset + 1;
-            offset = (size_t)(*((unsigned char*)data + offset));
+            if (offset >= size)
+            {
+                return 0;
+            }
+
+            if (!is_compression)
+            {
+                save_offset = offset + 1;
+            }
+
+            offset = (hi << 8) | (size_t)(*((unsigned char*)data + offset));
             is_compression = true;
+            if (offset >= size)
+            {
+                return 0;
+            }
         }
 
         size_t len = (size_t)(*((unsigned char*)data + offset));
+        if (buff_offset + len + 1 >= sizeof(buffer))
+        {
+            return 0;
+        }
         size_t old_offset = offset;
         offset += 1 + len;
 
@@ -240,8 +258,55 @@ char *record_parse_ptr(const void *data, size_t offset, size_t size, size_t r_le
     return strdup(buff);
 }
 
+bool record_parse_srv(const void *data, size_t offset, size_t size, size_t r_length, uint16_t* port, char* target_name)
+{
 
-bool parse_mdns_response(struct HashTable* ht, char* ip_str, const void *data, size_t size)
+    if ((r_length <= size - offset) && (r_length >= 2))
+    {
+        const uint16_t* srv_records = (const uint16_t*)((const unsigned char*)data + offset);
+        srv_records++; // skip priority
+        srv_records++; // skip weights
+        *port = ntohs(*(srv_records++));
+        if(extract_mdns_name(data, target_name, offset + 6, size) == 0)
+        {
+            return false;
+        }
+    }
+    else
+    {
+        return false;
+    }
+
+    return true;
+}
+
+void device_entry_destroy(void* v)
+{
+    device_entry* entry = (device_entry*)v;
+    free(entry->ssdp_server);
+    free(entry->ssdp_location);
+    if (entry->services)
+    {
+        for (uint8_t j = 0; j < entry->service_count; ++j)
+        {
+            free(entry->services[j].service_type);
+            free(entry->services[j].instance_name);
+            free(entry->services[j].host_name);
+        }
+        free(entry->services);
+    }
+    free(entry);
+}
+
+void pending_srv_destroy(void* v)
+{
+    mdns_service* svc = (mdns_service*)v;
+    free(svc->host_name);
+    free(svc->instance_name);
+    free(svc);
+}
+
+bool parse_mdns_response(struct HashTable* ht, struct HashTable* pending_srv_ht, char* ip_str, const void *data, size_t size)
 {
     struct dns_header* header = (struct dns_header*)data; 
 
@@ -257,47 +322,151 @@ bool parse_mdns_response(struct HashTable* ht, char* ip_str, const void *data, s
 
     mdns_service* services = NULL;
     uint8_t service_count = 0;
+
     // parse answer sections
     for (uint16_t i = 0; i < ntohs(header->ancount); ++i)
     {
-        if (!skip_mdns_name(data, &offset, size))
+        char* owner_name = calloc(256, sizeof(char)); // the instance is the record owners name
+        size_t temp_offset = extract_mdns_name(data, owner_name,  offset, size);
+        if (temp_offset == 0)
         {
+            free(owner_name);
             break;
         }
+        offset += temp_offset;
 
         uint16_t rtype = ntohs(*(uint16_t*)((unsigned char*)data + offset));
         uint16_t rclass  = ntohs(*(uint16_t*)((unsigned char*)data + offset + 2));
         uint32_t ttl = ntohl(*(uint32_t*)((unsigned char*)data + offset + 4));
         uint16_t rdlen = ntohs(*(uint16_t*)((unsigned char*)data + offset + 8));
 
+        //fprintf(stderr, "[LOOP] record i=%u owner=%s rtype=0x%04X rdlen=%u offset=%zu size=%zu\n", i, owner_name, rtype, rdlen, offset, size);
+
         offset += 10;
 
+        bool owner_transferred = false;
         switch (rtype)
         {
             case DNS_TYPE_PTR:
+                if (!strstr(owner_name, ".local"))
                 {
-                    char* service_type = record_parse_ptr(data, offset, size, rdlen);
+                    break;
+                }
 
-                    if (service_type)
+                {
+                    char* instance_name = record_parse_ptr(data, offset, size, rdlen);
+                    if (instance_name)
                     {
-                        mdns_service* temp  = (mdns_service*)realloc(services, (service_count + 1) * sizeof(mdns_service));
-                        if (temp)
+                        // check table with instance_name as key
+                        mdns_service* pend = (mdns_service*)ht_get(pending_srv_ht, instance_name);
+
+                        if (!pend)
                         {
-                            services = temp;
-                            services[service_count++].type = service_type;
+                            mdns_service* temp  = (mdns_service*)realloc(services, (service_count + 1) * sizeof(mdns_service));
+                            if (temp)
+                            {
+                                services = temp;
+                                memset(&services[service_count], 0, sizeof(mdns_service));
+                                services[service_count].service_type = owner_name;
+                                services[service_count].instance_name = instance_name;
+                                services[service_count].port = 0;
+                                services[service_count++].host_name = NULL;
+                                owner_transferred = true;
+                            }
+                            else
+                            {
+                                free(instance_name);
+                            }                            
                         }
                         else
                         {
-                            free(service_type);
+                            mdns_service* temp  = (mdns_service*)realloc(services, (service_count + 1) * sizeof(mdns_service));
+                            if (temp)
+                            {
+                                services = temp;
+                                memset(&services[service_count], 0, sizeof(mdns_service));
+                                services[service_count].service_type = owner_name;
+                                services[service_count].instance_name = instance_name;
+                                services[service_count].port = pend->port;
+                                services[service_count++].host_name = pend->host_name;
+                                owner_transferred = true;
+                                free(pend);
+                            }
+                            else
+                            {
+                                free(instance_name);
+                            }      
                         }
                     }
                 }
-
                 break;
             case DNS_TYPE_SRV:
-                
+                if (!strstr(owner_name, ".local"))
+                {
+                    break;
+                }
 
+
+                {
+                    char* target_name = calloc(256, sizeof(char));
+                    uint16_t port_num = 0;
+                    fprintf(stderr, "[SRV] owner_name: %s\n", owner_name);
+                    if(record_parse_srv(data, offset, size, rdlen, &port_num, target_name))
+                    {
+                        fprintf(stderr, "[SRV] target: %s | port: %u\n", target_name, port_num);
+                        if (target_name[0] == '\0')
+                        {
+                            free(target_name);
+                        }
+                        else
+                        {
+
+                            bool found = false;
+                            for (uint8_t i = 0; i < service_count; ++i)
+                            {
+                                fprintf(stderr, "[SRV] comparing instance_name: %s vs owner_name: %s\n",
+                                    services[i].instance_name ? services[i].instance_name : "(null)", owner_name);
+                                if(services[i].instance_name && (strcmp(services[i].instance_name, owner_name) == 0))
+                                {
+                                    found = true;
+                                    services[i].port = port_num;
+                                    services[i].host_name = target_name;
+                                    fprintf(stderr, "[SRV] match found for service %u\n", i);
+                                    break;
+                                }
+                            }
+
+                            if (!found)
+                            {
+                                fprintf(stderr, "[SRV] no match, storing in pending table\n");
+                                mdns_service* not_found = calloc(1, sizeof(mdns_service));
+                                if (not_found)
+                                {
+                                    not_found->port = port_num;
+                                    not_found->host_name = target_name;
+                                    ht_set(pending_srv_ht, owner_name, not_found);
+                                }
+                                else
+                                {
+                                    free(target_name);
+                                }
+                            }
+                        }
+                    }
+                    else
+                    {
+                        fprintf(stderr, "[SRV] record_parse_srv failed\n");
+                        free(target_name);
+                    }
+                }
                 break;
+            default:
+                break;
+        }
+
+        if (!owner_transferred)
+        {
+            free(owner_name);
         }
 
         offset += rdlen;
@@ -328,8 +497,35 @@ bool parse_mdns_response(struct HashTable* ht, char* ip_str, const void *data, s
     {
         for (uint8_t i = 0; i < value->service_count; ++i)
         {
-            free(value->services[i].type);
-            //free(value->services[i].name);
+
+            for (uint8_t j = 0; j < service_count; ++j)
+            {
+                if (services[j].instance_name && value->services[i].instance_name && strcmp(services[j].instance_name, value->services[i].instance_name) == 0)
+                {
+                    if (!services[j].host_name && value->services[i].host_name)
+                    {
+                        services[j].host_name = value->services[i].host_name;
+                        value->services[i].host_name = NULL;
+                        services[j].port = value->services[i].port;
+                    }
+                    break;
+                }
+            }
+
+            if (value->services[i].service_type)
+            {
+                free(value->services[i].service_type);
+            }
+            
+            if (value->services[i].instance_name)
+            {
+                free(value->services[i].instance_name);
+            }
+
+            if (value->services[i].host_name)
+            {
+                free(value->services[i].host_name);
+            }
         }
         free(value->services);
     }

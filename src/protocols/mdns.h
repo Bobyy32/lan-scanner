@@ -62,7 +62,11 @@ void mdns_discovery_send_u(libnet_t* context, const device_info device);
 void mdns_discovery_rcv_callback(const unsigned char* packet, struct pcap_pkthdr* header, void* data);
 bool skip_mdns_name(const void* data, size_t* offset, size_t size);
 size_t extract_mdns_name(const void *data, char* out_buffer, size_t offset, size_t size);
-bool parse_mdns_response(struct HashTable* ht, char* ip_str, const void *data, size_t size);
 char* record_parse_ptr(const void *data, size_t offset, size_t size, size_t r_length);
+bool record_parse_srv(const void *data, size_t offset, size_t size, size_t r_length, uint16_t* port, char* target_name);
+bool parse_mdns_response(struct HashTable* ht, struct HashTable* pending_srv_ht, char* ip_str, const void *data, size_t size);
+
+void device_entry_destroy(void* v);
+void pending_srv_destroy(void* v);
 
 #endif

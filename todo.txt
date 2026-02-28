@@ -11,20 +11,18 @@ ARP → mDNS → SSDP → NBNS → passive monitoring → port probes.
 Fingerprinting:
 MAC OUI + DHCP hostname + mDNS device
 
-
 Things to implement:
-    Hashtable for keeping track of received ip and info and hash with FNV
+    Refactor ht_destroy function into void ht_destroy(struct HashTable* ht, void (*destroy_value)(void*));
+        - this allows seperate destruction for each type like device_entry and mdns_service structs
+        - seperate destructor functions for each type
+    
+    Keep track of service_entries in a hash table
+        - 
+
+
     Debugging macros for ease of Debugging
-    Figure out how to debug with elevated privilegs on vscode
-    Collect received information. Maybe a pool for responses?
 
 
 https://en.ittrip.xyz/c-language/c-debugging-macro
 
 https://sqlpey.com/c/c-cpp-debugging-macros/
-
-https://benhoyt.com/writings/hash-table-in-c/
-
-https://stackoverflow.com/questions/9385782/fnv-hashing-for-strings-in-c
-
-https://en.wikipedia.org/wiki/Fowler%E2%80%93Noll%E2%80%93Vo_hash_function#FNV-1a_hash

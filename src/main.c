@@ -19,7 +19,7 @@ int main(int argc, char* argv[])
     if(!get_device_info(&my_device))
     {
         fprintf(stderr, "Unable to get device info!\n");
-        ht_destroy(ht);
+        ht_destroy(ht, device_entry_destroy);
         return (EXIT_FAILURE);
     }
 
@@ -70,7 +70,7 @@ int main(int argc, char* argv[])
                 printf("  mDNS Services:\n");
                 for (uint8_t j = 0; j < entry->service_count; ++j)
                 {
-                    printf("    [%d] type: %s\n", j, entry->services[j].type ? entry->services[j].type : "unknown");
+                    printf("    [%d] type: %s\n", j, entry->services[j].service_type ? entry->services[j].service_type : "unknown");
                 }
             }
 
@@ -78,7 +78,7 @@ int main(int argc, char* argv[])
         }
     }
        
-    ht_destroy(ht);
+    ht_destroy(ht, device_entry_destroy);
     libnet_destroy(context);
     capture_close(handle);
     return 0;
@@ -86,7 +86,7 @@ int main(int argc, char* argv[])
 bad:
     if (ht)
     {
-        ht_destroy(ht);
+        ht_destroy(ht, device_entry_destroy);
     }
 
     if (context)
