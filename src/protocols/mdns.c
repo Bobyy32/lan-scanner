@@ -306,6 +306,149 @@ void pending_srv_destroy(void* v)
     free(svc);
 }
 
+static bool parse_mdns_record(const void *data, size_t size, size_t *offset, mdns_service **services, uint8_t *service_count, struct HashTable *pending_srv_ht)
+{
+    char* owner_name = calloc(256, sizeof(char));
+    size_t temp_offset = extract_mdns_name(data, owner_name, *offset, size);
+    if (temp_offset == 0)
+    {
+        free(owner_name);
+        return false;
+    }
+    *offset += temp_offset;
+
+    uint16_t rtype = ntohs(*(uint16_t*)((unsigned char*)data + *offset));
+    uint16_t rdlen = ntohs(*(uint16_t*)((unsigned char*)data + *offset + 8));
+
+    *offset += 10;
+
+    bool owner_transferred = false;
+    switch (rtype)
+    {
+        case DNS_TYPE_PTR:
+            if (!strstr(owner_name, ".local"))
+            {
+                break;
+            }
+
+            {
+                char* instance_name = record_parse_ptr(data, *offset, size, rdlen);
+                if (instance_name)
+                {
+                    mdns_service* pend = (mdns_service*)ht_get(pending_srv_ht, instance_name);
+
+                    if (!pend)
+                    {
+                        mdns_service* temp = (mdns_service*)realloc(*services, (*service_count + 1) * sizeof(mdns_service));
+                        if (temp)
+                        {
+                            *services = temp;
+                            memset(&(*services)[*service_count], 0, sizeof(mdns_service));
+                            (*services)[*service_count].service_type = owner_name;
+                            (*services)[*service_count].instance_name = instance_name;
+                            (*services)[*service_count].port = 0;
+                            (*services)[(*service_count)++].host_name = NULL;
+                            owner_transferred = true;
+                        }
+                        else
+                        {
+                            free(instance_name);
+                        }
+                    }
+                    else
+                    {
+                        mdns_service* temp = (mdns_service*)realloc(*services, (*service_count + 1) * sizeof(mdns_service));
+                        if (temp)
+                        {
+                            *services = temp;
+                            memset(&(*services)[*service_count], 0, sizeof(mdns_service));
+                            (*services)[*service_count].service_type = owner_name;
+                            (*services)[*service_count].instance_name = instance_name;
+                            (*services)[*service_count].port = pend->port;
+                            (*services)[(*service_count)++].host_name = pend->host_name;
+                            owner_transferred = true;
+                            free(pend);
+                        }
+                        else
+                        {
+                            free(instance_name);
+                        }
+                    }
+                }
+            }
+            break;
+
+        case DNS_TYPE_SRV:
+            if (!strstr(owner_name, ".local"))
+            {
+                break;
+            }
+
+            {
+                char* target_name = calloc(256, sizeof(char));
+                uint16_t port_num = 0;
+                if (record_parse_srv(data, *offset, size, rdlen, &port_num, target_name))
+                {
+                    if (target_name[0] == '\0')
+                    {
+                        free(target_name);
+                    }
+                    else
+                    {
+                        bool found = false;
+                        for (uint8_t i = 0; i < *service_count; ++i)
+                        {
+                            if ((*services)[i].instance_name && strcmp((*services)[i].instance_name, owner_name) == 0)
+                            {
+                                found = true;
+                                (*services)[i].port = port_num;
+                                (*services)[i].host_name = target_name;
+                                break;
+                            }
+                        }
+
+                        if (!found)
+                        {
+                            mdns_service* existing = (mdns_service*)ht_get(pending_srv_ht, owner_name);
+                            if (existing)
+                            {
+                                pending_srv_destroy(existing);
+                            }
+
+                            mdns_service* not_found = calloc(1, sizeof(mdns_service));
+                            if (not_found)
+                            {
+                                not_found->port = port_num;
+                                not_found->host_name = target_name;
+                                ht_set(pending_srv_ht, owner_name, not_found);
+                            }
+                            else
+                            {
+                                free(target_name);
+                            }
+                        }
+                    }
+                }
+                else
+                {
+                    free(target_name);
+                }
+            }
+            break;
+
+        default:
+            break;
+    }
+
+    if (!owner_transferred)
+    {
+        free(owner_name);
+    }
+
+    *offset += rdlen;
+    return true;
+}
+
 bool parse_mdns_response(struct HashTable* ht, struct HashTable* pending_srv_ht, char* ip_str, const void *data, size_t size)
 {
     struct dns_header* header = (struct dns_header*)data; 
@@ -323,153 +466,34 @@ bool parse_mdns_response(struct HashTable* ht, struct HashTable* pending_srv_ht,
     mdns_service* services = NULL;
     uint8_t service_count = 0;
 
-    // parse answer sections
+    // parse answer records
     for (uint16_t i = 0; i < ntohs(header->ancount); ++i)
     {
-        char* owner_name = calloc(256, sizeof(char)); // the instance is the record owners name
-        size_t temp_offset = extract_mdns_name(data, owner_name,  offset, size);
-        if (temp_offset == 0)
+        if (!parse_mdns_record(data, size, &offset, &services, &service_count, pending_srv_ht))
         {
-            free(owner_name);
             break;
         }
-        offset += temp_offset;
+    }
 
-        uint16_t rtype = ntohs(*(uint16_t*)((unsigned char*)data + offset));
-        uint16_t rclass  = ntohs(*(uint16_t*)((unsigned char*)data + offset + 2));
-        uint32_t ttl = ntohl(*(uint32_t*)((unsigned char*)data + offset + 4));
+    // skip authority records
+    for (uint16_t i = 0; i < ntohs(header->nscount); ++i)
+    {
+        skip_mdns_name(data, &offset, size);
+        if (offset + 10 > size)
+        {
+            break;
+        }
         uint16_t rdlen = ntohs(*(uint16_t*)((unsigned char*)data + offset + 8));
+        offset += 10 + rdlen;
+    }
 
-        //fprintf(stderr, "[LOOP] record i=%u owner=%s rtype=0x%04X rdlen=%u offset=%zu size=%zu\n", i, owner_name, rtype, rdlen, offset, size);
-
-        offset += 10;
-
-        bool owner_transferred = false;
-        switch (rtype)
+    // parse additional records
+    for (uint16_t i = 0; i < ntohs(header->arcount); ++i)
+    {
+        if (!parse_mdns_record(data, size, &offset, &services, &service_count, pending_srv_ht))
         {
-            case DNS_TYPE_PTR:
-                if (!strstr(owner_name, ".local"))
-                {
-                    break;
-                }
-
-                {
-                    char* instance_name = record_parse_ptr(data, offset, size, rdlen);
-                    if (instance_name)
-                    {
-                        // check table with instance_name as key
-                        mdns_service* pend = (mdns_service*)ht_get(pending_srv_ht, instance_name);
-
-                        if (!pend)
-                        {
-                            mdns_service* temp  = (mdns_service*)realloc(services, (service_count + 1) * sizeof(mdns_service));
-                            if (temp)
-                            {
-                                services = temp;
-                                memset(&services[service_count], 0, sizeof(mdns_service));
-                                services[service_count].service_type = owner_name;
-                                services[service_count].instance_name = instance_name;
-                                services[service_count].port = 0;
-                                services[service_count++].host_name = NULL;
-                                owner_transferred = true;
-                            }
-                            else
-                            {
-                                free(instance_name);
-                            }                            
-                        }
-                        else
-                        {
-                            mdns_service* temp  = (mdns_service*)realloc(services, (service_count + 1) * sizeof(mdns_service));
-                            if (temp)
-                            {
-                                services = temp;
-                                memset(&services[service_count], 0, sizeof(mdns_service));
-                                services[service_count].service_type = owner_name;
-                                services[service_count].instance_name = instance_name;
-                                services[service_count].port = pend->port;
-                                services[service_count++].host_name = pend->host_name;
-                                owner_transferred = true;
-                                free(pend);
-                            }
-                            else
-                            {
-                                free(instance_name);
-                            }      
-                        }
-                    }
-                }
-                break;
-            case DNS_TYPE_SRV:
-                if (!strstr(owner_name, ".local"))
-                {
-                    break;
-                }
-
-
-                {
-                    char* target_name = calloc(256, sizeof(char));
-                    uint16_t port_num = 0;
-                    fprintf(stderr, "[SRV] owner_name: %s\n", owner_name);
-                    if(record_parse_srv(data, offset, size, rdlen, &port_num, target_name))
-                    {
-                        fprintf(stderr, "[SRV] target: %s | port: %u\n", target_name, port_num);
-                        if (target_name[0] == '\0')
-                        {
-                            free(target_name);
-                        }
-                        else
-                        {
-
-                            bool found = false;
-                            for (uint8_t i = 0; i < service_count; ++i)
-                            {
-                                fprintf(stderr, "[SRV] comparing instance_name: %s vs owner_name: %s\n",
-                                    services[i].instance_name ? services[i].instance_name : "(null)", owner_name);
-                                if(services[i].instance_name && (strcmp(services[i].instance_name, owner_name) == 0))
-                                {
-                                    found = true;
-                                    services[i].port = port_num;
-                                    services[i].host_name = target_name;
-                                    fprintf(stderr, "[SRV] match found for service %u\n", i);
-                                    break;
-                                }
-                            }
-
-                            if (!found)
-                            {
-                                fprintf(stderr, "[SRV] no match, storing in pending table\n");
-                                mdns_service* not_found = calloc(1, sizeof(mdns_service));
-                                if (not_found)
-                                {
-                                    not_found->port = port_num;
-                                    not_found->host_name = target_name;
-                                    ht_set(pending_srv_ht, owner_name, not_found);
-                                }
-                                else
-                                {
-                                    free(target_name);
-                                }
-                            }
-                        }
-                    }
-                    else
-                    {
-                        fprintf(stderr, "[SRV] record_parse_srv failed\n");
-                        free(target_name);
-                    }
-                }
-                break;
-            default:
-                break;
+            break;
         }
-
-        if (!owner_transferred)
-        {
-            free(owner_name);
-        }
-
-        offset += rdlen;
     }
 
     if (service_count == 0)

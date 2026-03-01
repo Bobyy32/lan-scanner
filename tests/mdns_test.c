@@ -30,7 +30,7 @@ int main(void)
         MDNS
     */
     char pcap_errbuff[PCAP_ERRBUF_SIZE];
-    pcap_t* handle = pcap_open_offline("tests/pcap/logingintoIS.pcap", pcap_errbuff);
+    pcap_t* handle = pcap_open_offline("tests/pcap/mDNS-CC3000.pcapng", pcap_errbuff);
     if (!handle)
     {
         fprintf(stderr, "Unable to initialize pcap: %s\n", pcap_errbuff);
