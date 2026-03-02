@@ -70,8 +70,6 @@ bad:
 
 bool mdns_discovery_send_m(libnet_t *context, const device_info device)
 {
-
-    // multicast ip
     if(!create_mdns_query_msg(context, device, inet_addr("224.0.0.251"), "_services._dns-sd._udp.local", DNS_TYPE_PTR))
     {
         fprintf(stderr, "Failed to create multicast mdns message\n");
@@ -283,8 +281,10 @@ bool record_parse_srv(const void *data, size_t offset, size_t size, size_t r_len
 void device_entry_destroy(void* v)
 {
     device_entry* entry = (device_entry*)v;
+
     free(entry->ssdp_server);
     free(entry->ssdp_location);
+
     if (entry->services)
     {
         for (uint8_t j = 0; j < entry->service_count; ++j)
@@ -295,6 +295,7 @@ void device_entry_destroy(void* v)
         }
         free(entry->services);
     }
+
     free(entry);
 }
 
@@ -309,6 +310,8 @@ void pending_srv_destroy(void* v)
 static bool parse_mdns_record(const void *data, size_t size, size_t *offset, mdns_service **services, uint8_t *service_count, struct HashTable *pending_srv_ht)
 {
     char* owner_name = calloc(256, sizeof(char));
+    bool owner_transferred = false;
+
     size_t temp_offset = extract_mdns_name(data, owner_name, *offset, size);
     if (temp_offset == 0)
     {
@@ -321,8 +324,7 @@ static bool parse_mdns_record(const void *data, size_t size, size_t *offset, mdn
     uint16_t rdlen = ntohs(*(uint16_t*)((unsigned char*)data + *offset + 8));
 
     *offset += 10;
-
-    bool owner_transferred = false;
+    
     switch (rtype)
     {
         case DNS_TYPE_PTR:
@@ -455,6 +457,9 @@ bool parse_mdns_response(struct HashTable* ht, struct HashTable* pending_srv_ht,
 
     size_t offset = 12; // skip header
 
+    mdns_service* services = NULL;
+    uint8_t service_count = 0;
+
     // skip questions sections
     for (uint16_t i = 0; i < ntohs(header->qdcount); ++i)
     {
@@ -462,9 +467,6 @@ bool parse_mdns_response(struct HashTable* ht, struct HashTable* pending_srv_ht,
 
         offset += 4;
     }
-
-    mdns_service* services = NULL;
-    uint8_t service_count = 0;
 
     // parse answer records
     for (uint16_t i = 0; i < ntohs(header->ancount); ++i)
