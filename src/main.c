@@ -10,7 +10,7 @@ int main(int argc, char* argv[])
     struct HashTable* ht = ht_create();
     if (ht == NULL)
     {
-        fprintf(stderr, "Unable to create hash table!\n");
+        debug_printf("Unable to create hash table!\n");
         return (EXIT_FAILURE);
     }
 
@@ -18,7 +18,7 @@ int main(int argc, char* argv[])
     device_info my_device = { 0 };
     if(!get_device_info(&my_device))
     {
-        fprintf(stderr, "Unable to get device info!\n");
+        debug_printf("Unable to get device info!\n");
         ht_destroy(ht, device_entry_destroy);
         return (EXIT_FAILURE);
     }
@@ -28,7 +28,7 @@ int main(int argc, char* argv[])
     libnet_t* context = libnet_init(LIBNET_LINK_ADV, my_device.name, libnet_errbuff);
     if (!context)
     {
-        fprintf(stderr, "Unable to intialize libnet context: %s\n", libnet_errbuff);
+        debug_printf("Unable to intialize libnet context: %s\n", libnet_errbuff);
         goto bad;
     }
 
@@ -46,7 +46,7 @@ int main(int argc, char* argv[])
     pcap_t* handle = init_capture(my_device, filter);
     if (!handle)
     {
-        fprintf(stderr, "Unable to initialize pcap catpure\n");
+        debug_printf("Unable to initialize pcap catpure\n");
         goto bad;
     }
 

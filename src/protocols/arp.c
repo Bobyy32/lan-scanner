@@ -8,7 +8,7 @@ bool create_arp_message(libnet_t* context, const device_info source_device, cons
 
     if (arp_hdr == -1)
     {
-        fprintf(stderr, "Can't build arp header: %s\n", libnet_geterror(context));
+        debug_printf("Can't build arp header: %s\n", libnet_geterror(context));
         return false;
     }
 
@@ -17,7 +17,7 @@ bool create_arp_message(libnet_t* context, const device_info source_device, cons
 
     if (eth_hdr == -1)
     {
-        fprintf(stderr, "Cant build ethernet header: %s\n", libnet_geterror(context));
+        debug_printf("Cant build ethernet header: %s\n", libnet_geterror(context));
         return false;
     }
 
@@ -32,11 +32,10 @@ void arp_scan(libnet_t* context, const device_info device)
 
     for (uint32_t host = start + 1; host < end;  host++)
     {
-        //printf("%u.%u.%u.%u\n", (host >> 24) & 0xFF, (host >> 16) & 0xFF, (host >> 8) & 0xFF, host & 0xFF);
         uint32_t target = htonl(host);
         if(!create_arp_message(context, device, target))
         {
-            fprintf(stderr, "Unable to create arp message for %s\n", inet_ntoa((struct in_addr){target}));
+            debug_printf("Unable to create arp message for %s\n", inet_ntoa((struct in_addr){target}));
             continue;
         }
 
@@ -44,11 +43,9 @@ void arp_scan(libnet_t* context, const device_info device)
         int c = libnet_write(context);
         if (c == -1)
         {
-            fprintf(stderr, "Packet size: %s\n", libnet_geterror(context));
+            debug_printf("Packet size: %s\n", libnet_geterror(context));
             continue;
         }
-
-        //fprintf(stdout, "Wrote %d byte ARP packet to %s\n", c, inet_ntoa((struct in_addr){target}));
         
         libnet_clear_packet(context);
     }
@@ -64,10 +61,6 @@ void arp_scan_rcv_callback(const unsigned char *packet, struct pcap_pkthdr *head
             
             if (ntohs(arp_hdr->ea_hdr.ar_op) == ARPOP_REPLY)
             {
-                /* printf("[Reply] IP: %s | MAC Address: %02x:%02x:%02x:%02x:%02x:%02x\n",
-                    inet_ntoa(*(struct in_addr*)arp_hdr->arp_spa),
-                    arp_hdr->arp_sha[0], arp_hdr->arp_sha[1], arp_hdr->arp_sha[2], arp_hdr->arp_sha[3], arp_hdr->arp_sha[4], arp_hdr->arp_sha[5]);
-                 */  
 
                 if (ht_get(ht, inet_ntoa(*(struct in_addr*)arp_hdr->arp_spa)))
                 {

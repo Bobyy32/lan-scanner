@@ -21,14 +21,14 @@ bool create_ssdp_message(libnet_t *context, const device_info device)
     libnet_ptag_t udp = libnet_build_udp(1900, 1900, LIBNET_UDP_H + buffer_len, 0, (uint8_t*)buffer, buffer_len, context, LIBNET_PTAG_INITIALIZER);
     if (udp == -1)
     {
-        fprintf(stderr, "Can't build UDP header: %s\n", libnet_geterror(context));
+        debug_printf("Can't build UDP header: %s\n", libnet_geterror(context));
         return false;
     }
 
     libnet_ptag_t ipv4 = libnet_build_ipv4(LIBNET_IPV4_H + LIBNET_UDP_H + buffer_len, 0, 0, 0, 3, IPPROTO_UDP, 0, device.ipv4_address, inet_addr(ssdp_m_addr), NULL, 0, context, LIBNET_PTAG_INITIALIZER);
     if (ipv4 == -1)
     {
-        fprintf(stderr, "Can't build IPV4 header: %s\n", libnet_geterror(context));
+        debug_printf("Can't build IPV4 header: %s\n", libnet_geterror(context));
         return false;
     }
 
@@ -36,7 +36,7 @@ bool create_ssdp_message(libnet_t *context, const device_info device)
     libnet_ptag_t ether = libnet_autobuild_ethernet(dst, ETHERTYPE_IP, context);
     if (ether == -1)
     {
-        fprintf(stderr, "Can't build Ethernet header: %s\n", libnet_geterror(context));
+        debug_printf("Can't build Ethernet header: %s\n", libnet_geterror(context));
         return false;
     }
 
@@ -47,18 +47,16 @@ bool ssdp_discovery_send(libnet_t *context, const device_info device)
 {
     if(!create_ssdp_message(context, device))
     {
-        fprintf(stderr, "Failed to create ssdp message\n");
+        debug_printf("Failed to create ssdp message\n");
         return false;
     }
 
     int c = libnet_write(context);
     if (c == -1)
     {
-        fprintf(stderr, "Packet size: %s\n", libnet_geterror(context));
+        debug_printf("Packet size: %s\n", libnet_geterror(context));
         return false;
     }
-
-    fprintf(stdout, "Successfuly Sent ssdp discovery\n\n");
 
     return true;
 }

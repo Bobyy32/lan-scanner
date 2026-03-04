@@ -6,26 +6,26 @@ pcap_t *init_capture(device_info device, const char *filter)
     pcap_t* handle = pcap_open_live(device.name, BUFSIZ, 0, 100, errbuff); // 100 redundant but keep
     if (handle == NULL)
     {
-        fprintf(stderr, "Couldn't open device %s, %s\n", device.name, errbuff);
+        debug_printf("Couldn't open device %s, %s\n", device.name, errbuff);
         goto bad;
     }
 
     if (pcap_datalink(handle) != DLT_EN10MB)
     {
-        fprintf(stderr, "Device %s doesn't provide Ethernet headers - not supported\n", device.name);
+        debug_printf("Device %s doesn't provide Ethernet headers - not supported\n", device.name);
         goto bad;
     }
 
     struct bpf_program fp = {0};
     if (pcap_compile(handle, &fp, filter, 0, device.ipv4_address) == -1)
     {
-        fprintf(stderr, "Couldn't parse filter mDNS: %s\n", pcap_geterr(handle));
+        debug_printf("Couldn't parse filter mDNS: %s\n", pcap_geterr(handle));
         goto bad;
     }
 
     if (pcap_setfilter(handle, &fp) == -1)
     {
-        fprintf(stderr, "Couldn't install filter: %s\n", pcap_geterr(handle));
+        debug_printf("Couldn't install filter: %s\n", pcap_geterr(handle));
         goto bad;
     }
 
@@ -33,7 +33,7 @@ pcap_t *init_capture(device_info device, const char *filter)
     char pcap_errbuf[PCAP_ERRBUF_SIZE];
     if (pcap_setnonblock(handle, 1, pcap_errbuf) == -1)
     {
-        fprintf(stderr, "Couldn't set non-blocking mode: %s\n", pcap_errbuf);
+        debug_printf("Couldn't set non-blocking mode: %s\n", pcap_errbuf);
         goto bad;
     }
 
@@ -74,7 +74,7 @@ void capture_loop(pcap_t *handle, int timeout, packet_handler handler_callback, 
             }
             else
             {
-                fprintf(stderr, "pcap_next_ex error: %d\n", result);
+                debug_printf("pcap_next_ex error: %d\n", result);
             }
             continue;
         }

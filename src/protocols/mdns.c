@@ -36,21 +36,21 @@ bool create_mdns_query_msg(libnet_t *context, const device_info device, const ui
     libnet_ptag_t dns = libnet_build_dnsv4(LIBNET_DNS_H, 0, 0, 1, 0, 0, 0, (uint8_t*)buffer, (uint32_t)offset, context, 0);
     if (dns == -1)
     {
-        fprintf(stderr, "Can't build DNS header: %s\n", libnet_geterror(context));
+        debug_printf("Can't build DNS header: %s\n", libnet_geterror(context));
         goto bad;
     }
 
     libnet_ptag_t udp = libnet_build_udp(5353,5353, LIBNET_UDP_H + LIBNET_DNS_H + offset, 0, NULL, 0, context, 0);
     if (udp == -1)
     {
-        fprintf(stderr, "Can't build UDP header: %s\n", libnet_geterror(context));
+        debug_printf("Can't build UDP header: %s\n", libnet_geterror(context));
         goto bad;
     }
 
     libnet_ptag_t ipv4 = libnet_build_ipv4(LIBNET_IPV4_H + LIBNET_UDP_H + LIBNET_DNS_H + offset, 0, 0, 0, 255, IPPROTO_UDP, 0, device.ipv4_address, target_ip, NULL, 0, context, 0);
     if (ipv4 == -1)
     {
-        fprintf(stderr, "Can't build IPV4 header: %s\n", libnet_geterror(context));
+        debug_printf("Can't build IPV4 header: %s\n", libnet_geterror(context));
         goto bad;
     }
     
@@ -58,7 +58,7 @@ bool create_mdns_query_msg(libnet_t *context, const device_info device, const ui
     libnet_ptag_t ether = libnet_autobuild_ethernet(dst, ETHERTYPE_IP, context);
     if (ether == -1)
     {
-        fprintf(stderr, "Can't build Ethernet header: %s\n", libnet_geterror(context));
+        debug_printf("Can't build Ethernet header: %s\n", libnet_geterror(context));
         goto bad;
     }
 
@@ -72,18 +72,18 @@ bool mdns_discovery_send_m(libnet_t *context, const device_info device)
 {
     if(!create_mdns_query_msg(context, device, inet_addr("224.0.0.251"), "_services._dns-sd._udp.local", DNS_TYPE_PTR))
     {
-        fprintf(stderr, "Failed to create multicast mdns message\n");
+        debug_printf("Failed to create multicast mdns message\n");
         return false;
     }
 
     int c = libnet_write(context);
     if (c == -1)
     {
-        fprintf(stderr, "Packet size: %s\n", libnet_geterror(context));
+        debug_printf("Packet size: %s\n", libnet_geterror(context));
         return false;
     }
 
-    fprintf(stdout, "Successfuly Sent multicast mDNS request\n");
+    debug_printf("Successfuly Sent multicast mDNS request\n");
 
     return true;
 }
@@ -100,14 +100,14 @@ void mdns_discovery_send_u(libnet_t* context, const device_info device)
         uint32_t target = htonl(host);
         if(!create_mdns_query_msg(context, device, target, "_services._dns-sd._udp.local", DNS_TYPE_PTR))
         {
-            fprintf(stderr, "Unable to create mdns message for %s\n", inet_ntoa((struct in_addr){target}));
+            debug_printf("Unable to create mdns message for %s\n", inet_ntoa((struct in_addr){target}));
             continue;
         }
 
         int c = libnet_write(context);
         if (c == -1)
         {
-            fprintf(stderr, "Packet size: %s\n", libnet_geterror(context));
+            debug_printf("Packet size: %s\n", libnet_geterror(context));
             continue;
         }
         
@@ -144,7 +144,7 @@ void mdns_discovery_rcv_callback(const unsigned char* packet, struct pcap_pkthdr
 
     if (res == false)
     {
-        //fprintf(stderr, "Failed to parse mdns response!\n");
+        //debug_printf("Failed to parse mdns response!\n");
     }
 }
 

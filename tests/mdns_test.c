@@ -8,7 +8,7 @@ int main(void)
     struct HashTable* srv_ht = ht_create();
     if (ht == NULL || srv_ht == NULL)
     {
-        fprintf(stderr, "Unable to create hash table!\n");
+        debug_printf("Unable to create hash table!\n");
         ht_destroy(ht, device_entry_destroy);
         ht_destroy(srv_ht, pending_srv_destroy);
         return (EXIT_FAILURE);
@@ -20,7 +20,7 @@ int main(void)
     device_info my_device = { 0 };
     if(!get_device_info(&my_device))
     {
-        fprintf(stderr, "Unable to get device info!\n");
+        debug_printf("Unable to get device info!\n");
         ht_destroy(ht, device_entry_destroy);
         ht_destroy(srv_ht, pending_srv_destroy);
         return (EXIT_FAILURE);
@@ -33,7 +33,7 @@ int main(void)
     pcap_t* handle = pcap_open_offline("tests/pcap/mDNS-CC3000.pcapng", pcap_errbuff);
     if (!handle)
     {
-        fprintf(stderr, "Unable to initialize pcap: %s\n", pcap_errbuff);
+        debug_printf("Unable to initialize pcap: %s\n", pcap_errbuff);
         goto bad;
     }
 

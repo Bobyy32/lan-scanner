@@ -16,6 +16,8 @@
 #include <pcap.h>
 #include <libnet.h>
 
+#include "debug.h"
+
 /*
     Have a struct that holds device details:
     name of interface

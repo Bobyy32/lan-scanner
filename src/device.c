@@ -8,7 +8,7 @@ bool get_device_info(device_info* device)
     char pcap_errbuff[PCAP_ERRBUF_SIZE];
     if ((pcap_findalldevs(&device_list, pcap_errbuff) != 0) || device_list == NULL)
     {
-        fprintf(stderr, "Couldn't find network device list: %s\n", pcap_errbuff);
+        debug_printf("Couldn't find network device list: %s\n", pcap_errbuff);
         return false;
     }
     else
@@ -42,19 +42,19 @@ bool get_device_info(device_info* device)
         
     if (device->ipv4_address == 0)
     {
-        fprintf(stderr, "Failed to find IPV4 Address\n");
+        debug_printf("Failed to find IPV4 Address\n");
         return false;
     }
     else if (device->subnet_mask == 0)
     {
-        fprintf(stderr, "Failed to find Subnet Mask\n");
+        debug_printf("Failed to find Subnet Mask\n");
         return false;
     }
 
     // MAC address
     if(!get_MAC_addr(device->name, device->mac_address))
     {
-        fprintf(stderr, "Couldn't get MAC address (get_MAC_addr)\n");
+        debug_printf("Couldn't get MAC address (get_MAC_addr)\n");
         return false;
     }
     else
@@ -81,14 +81,14 @@ bool get_MAC_addr(char *device, uint8_t* mac_out)
     FILE* f = fopen(path, "r");
     if (f == NULL)
     {
-        fprintf(stderr, "Failed to open, %s\n", path);
+        debug_printf("Failed to open, %s\n", path);
         return false;
     }
 
     if(fgets(mac_addr, sizeof(mac_addr), f) == NULL)
     {
         fclose(f);
-        fprintf(stderr, "Failed to get MAC address\n");
+        debug_printf("Failed to get MAC address\n");
         return false;
     }
 
@@ -113,14 +113,14 @@ char *get_MAC_addr_str(char *device)
     FILE* f = fopen(path, "r");
     if (f == NULL)
     {
-        fprintf(stderr, "Failed to open, %s\n", path);
+        debug_printf("Failed to open, %s\n", path);
         return NULL;
     }
 
     if(fgets(mac_addr, 18, f) == NULL)
     {
         fclose(f);
-        fprintf(stderr, "Failed to get MAC address\n");
+        debug_printf("Failed to get MAC address\n");
         return NULL;
     }
 
