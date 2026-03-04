@@ -145,6 +145,7 @@ void mdns_discovery_rcv_callback(const unsigned char* packet, struct pcap_pkthdr
     if (res == false)
     {
         //debug_printf("Failed to parse mdns response!\n");
+        return;
     }
 }
 
