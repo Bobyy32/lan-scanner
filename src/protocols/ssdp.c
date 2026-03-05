@@ -70,7 +70,11 @@ void ssdp_discovery_rcv_callback(const unsigned char *packet, struct pcap_pkthdr
     char* ssdp_data = (char *)(packet + sizeof(struct udphdr) + (ip_hdr->ip_hl << 2) + sizeof(struct ether_header));
 
     unsigned int ssdp_len = ntohs(udp_hdr->len) - sizeof(struct udphdr);
-
+    size_t headers_len = sizeof(struct ether_header) + (ip_hdr->ip_hl << 2) + sizeof(struct udphdr);
+    if (headers_len + ssdp_len > header->caplen)
+    {
+        ssdp_len = header->caplen > headers_len ? header->caplen - headers_len : 0;
+    }
 
     device_entry* value = (device_entry*)ht_get(ht, inet_ntoa(ip_hdr->ip_src));
     if (value == NULL)
@@ -84,6 +88,11 @@ void ssdp_discovery_rcv_callback(const unsigned char *packet, struct pcap_pkthdr
     }
 
     char* buff = malloc(ssdp_len + 1);
+    if (buff == NULL)
+    {
+        return;
+    }
+
     memcpy(buff, ssdp_data, ssdp_len);
     buff[ssdp_len] = '\0';
 

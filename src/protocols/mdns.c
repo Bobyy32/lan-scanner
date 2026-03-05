@@ -551,8 +551,9 @@ void mdns_discovery_rcv_callback(const unsigned char* packet, struct pcap_pkthdr
         return;
     }
 
-
-    size_t mdns_size = ntohs(udp_hdr->len) - 8;
+    size_t udp_payload = ntohs(udp_hdr->len) - 8;
+    size_t captured = header->caplen - sizeof(struct ether_header) - ip_hdr_len - sizeof(struct udphdr);
+    size_t mdns_size = udp_payload < captured ? udp_payload : captured;
 
     bool res = parse_mdns_response(ht->ht, ht->srv_table, inet_ntoa(ip_hdr->ip_src),(void*)dns_hdr, mdns_size);
 
