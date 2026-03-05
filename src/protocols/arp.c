@@ -51,7 +51,7 @@ void arp_scan(libnet_t* context, const device_info device)
     }
 }
 
-void arp_scan_rcv_callback(const unsigned char *packet, struct pcap_pkthdr *header, void *data)
+void arp_rcv_callback(const unsigned char *packet, struct pcap_pkthdr *header, void *data)
 {
     struct HashTable* ht = (struct HashTable*)data;
     struct ether_header* ether_hdr = (struct ether_header*)packet;

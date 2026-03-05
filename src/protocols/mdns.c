@@ -1,7 +1,7 @@
 #include "mdns.h"
 
 // Helper to write a DNS label
-int write_dns_label(unsigned char *buf, int offset, const char *label)
+static int write_dns_label(unsigned char *buf, int offset, const char *label)
 {
     int len = strlen(label);                                                                                                                                                                                               
     buf[offset++] = (unsigned char)len;                                                                                                                                                                                    
@@ -115,41 +115,7 @@ void mdns_discovery_send_u(libnet_t* context, const device_info device)
     }
 }
 
-void mdns_discovery_rcv_callback(const unsigned char* packet, struct pcap_pkthdr* header, void* data)
-{
-
-    capture_ht* ht = (capture_ht*)data;
-    
-    struct ip* ip_hdr = (struct ip*)(packet + sizeof(struct ether_header));
-    int ip_hdr_len = ip_hdr->ip_hl * 4;
-    struct udphdr* udp_hdr = (struct udphdr*)(packet + ip_hdr_len + sizeof(struct ether_header));
-    struct dns_header* dns_hdr = (struct dns_header*)(packet + sizeof(struct udphdr) + ip_hdr_len + sizeof(struct ether_header));
-    
-    uint16_t flags = ntohs(dns_hdr->flags);
-    if (!(flags & DNS_FLAG_QR))
-    {
-        return;
-    }
-
-    uint16_t num_answers = ntohs(dns_hdr->ancount);
-    if (num_answers == 0)
-    {
-        return;
-    }
-
-
-    size_t mdns_size = ntohs(udp_hdr->len) - 8;
-
-    bool res = parse_mdns_response(ht->ht, ht->srv_table, inet_ntoa(ip_hdr->ip_src),(void*)dns_hdr, mdns_size);
-
-    if (res == false)
-    {
-        //debug_printf("Failed to parse mdns response!\n");
-        return;
-    }
-}
-
-bool skip_mdns_name(const void *data, size_t *offset, size_t size)
+static bool skip_mdns_name(const void *data, size_t *offset, size_t size)
 {
     while(*offset < size && (*((unsigned char*)data + (*offset))) != 0x00)
     {
@@ -171,7 +137,7 @@ bool skip_mdns_name(const void *data, size_t *offset, size_t size)
     return true;
 }
 
-size_t extract_mdns_name(const void *data, char* out_buffer, size_t offset, size_t size)
+static size_t extract_mdns_name(const void *data, char* out_buffer, size_t offset, size_t size)
 {
     bool is_compression = false;
     size_t buff_offset = 0;
@@ -238,7 +204,7 @@ size_t extract_mdns_name(const void *data, char* out_buffer, size_t offset, size
 }
 
 
-char *record_parse_ptr(const void *data, size_t offset, size_t size, size_t r_length)
+static char *record_parse_ptr(const void *data, size_t offset, size_t size, size_t r_length)
 {
     char buff[256] = {0};
 
@@ -257,7 +223,7 @@ char *record_parse_ptr(const void *data, size_t offset, size_t size, size_t r_le
     return strdup(buff);
 }
 
-bool record_parse_srv(const void *data, size_t offset, size_t size, size_t r_length, uint16_t* port, char* target_name)
+static bool record_parse_srv(const void *data, size_t offset, size_t size, size_t r_length, uint16_t* port, char* target_name)
 {
 
     if ((r_length <= size - offset) && (r_length >= 2))
@@ -452,7 +418,7 @@ static bool parse_mdns_record(const void *data, size_t size, size_t *offset, mdn
     return true;
 }
 
-bool parse_mdns_response(struct HashTable* ht, struct HashTable* pending_srv_ht, char* ip_str, const void *data, size_t size)
+static bool parse_mdns_response(struct HashTable* ht, struct HashTable* pending_srv_ht, char* ip_str, const void *data, size_t size)
 {
     struct dns_header* header = (struct dns_header*)data; 
 
@@ -561,4 +527,38 @@ bool parse_mdns_response(struct HashTable* ht, struct HashTable* pending_srv_ht,
     value->service_count = service_count;
 
     return true;
+}
+
+void mdns_discovery_rcv_callback(const unsigned char* packet, struct pcap_pkthdr* header, void* data)
+{
+
+    capture_ht* ht = (capture_ht*)data;
+    
+    struct ip* ip_hdr = (struct ip*)(packet + sizeof(struct ether_header));
+    int ip_hdr_len = ip_hdr->ip_hl * 4;
+    struct udphdr* udp_hdr = (struct udphdr*)(packet + ip_hdr_len + sizeof(struct ether_header));
+    struct dns_header* dns_hdr = (struct dns_header*)(packet + sizeof(struct udphdr) + ip_hdr_len + sizeof(struct ether_header));
+    
+    uint16_t flags = ntohs(dns_hdr->flags);
+    if (!(flags & DNS_FLAG_QR))
+    {
+        return;
+    }
+
+    uint16_t num_answers = ntohs(dns_hdr->ancount);
+    if (num_answers == 0)
+    {
+        return;
+    }
+
+
+    size_t mdns_size = ntohs(udp_hdr->len) - 8;
+
+    bool res = parse_mdns_response(ht->ht, ht->srv_table, inet_ntoa(ip_hdr->ip_src),(void*)dns_hdr, mdns_size);
+
+    if (res == false)
+    {
+        //debug_printf("Failed to parse mdns response!\n");
+        return;
+    }
 }

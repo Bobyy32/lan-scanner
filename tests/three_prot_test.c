@@ -45,7 +45,7 @@ int main(void)
     while(pcap_next_ex(handle, &header, &packet))
     {
         packet_count++;
-        arp_scan_rcv_callback(packet, header, (void*)ct.ht);
+        arp_rcv_callback(packet, header, (void*)ct.ht);
         mdns_discovery_rcv_callback(packet, header, (void*)&ct);
         ssdp_discovery_rcv_callback(packet, header, (void*)ct.ht);
 
@@ -62,15 +62,19 @@ int main(void)
             device_entry* entry = (device_entry*)ht->table[i]->value;
             printf("IP: %s\n", ht->table[i]->key);
 
-            if(entry->mac)
+            if(entry->mac[0] != '\0')
             {
                 printf("  MAC address:   %s\n", entry->mac);
             }
 
             if (entry->ssdp_server)
+            {
                 printf("  SSDP Server:   %s\n", entry->ssdp_server);
+            }
             if (entry->ssdp_location)
+            {
                 printf("  SSDP Location: %s\n", entry->ssdp_location);
+            }
 
             if (entry->service_count > 0)
             {
@@ -97,9 +101,13 @@ int main(void)
 
 bad:
     if (ht)
+    {
         ht_destroy(ht, device_entry_destroy);
+    }
     if (srv_ht)
+    {
         ht_destroy(srv_ht, pending_srv_destroy);
+    }
 
     capture_close(handle);
 
