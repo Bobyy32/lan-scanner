@@ -1,8 +1,9 @@
 #ifndef MDNS_H
 #define MDNS_H
 
+#include <stdint.h>
+#include <libnet.h>
 #include "../device.h"
-#include "../hashtable.h"
 
 /*
     Resources to check out:
@@ -60,8 +61,5 @@ bool mdns_discovery_send_m(libnet_t* context, const device_info device);
 void mdns_discovery_send_u(libnet_t* context, const device_info device);
 
 void mdns_discovery_rcv_callback(const unsigned char* packet, struct pcap_pkthdr* header, void* data);
-
-void device_entry_destroy(void* v);
-void pending_srv_destroy(void* v);
 
 #endif

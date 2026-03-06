@@ -1,22 +1,9 @@
 #ifndef DEVICE_H
 #define DEVICE_H
 
-#include <stdio.h>
-#include <string.h>
 #include <stdint.h>
-#include <stdlib.h>
 #include <stdbool.h>
-#include <time.h>
-
-#include <netinet/ether.h>
-#include <netinet/if_ether.h>
-#include <netinet/ip.h>
-#include <netinet/udp.h>
-
-#include <pcap.h>
-#include <libnet.h>
-
-#include "debug.h"
+#include <net/if.h>
 
 /*
     Have a struct that holds device details:
@@ -79,6 +66,9 @@ bool get_MAC_addr(char *device, uint8_t* mac_out);
 
 // remember to free returned val
 char* get_MAC_addr_str(char* device);
+
+void device_entry_destroy(void* v);
+void pending_srv_destroy(void* v);
 
 
 

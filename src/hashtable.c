@@ -27,6 +27,8 @@ struct HashTable *ht_create()
 
     ht->table = (bucket**)calloc(ht->capacity, sizeof(bucket*));
 
+    pthread_mutex_init(&ht->mutex, NULL);
+
     return ht;
 }
 
@@ -44,19 +46,23 @@ void ht_destroy(struct HashTable *ht, void (*destroy_value)(void*))
     }
 
     free(ht->table);
+    pthread_mutex_destroy(&ht->mutex);
     free(ht);
 }
 
 void* ht_get(struct HashTable* ht, const char* key)
 {
+    pthread_mutex_lock(&ht->mutex);
     uint64_t hash = ht_hash(key);
     size_t index = (size_t)(hash & (uint64_t)(ht->capacity - 1));
+    void* res = NULL;
  
     while (ht->table[index] != NULL)
     {
         if (strcmp(ht->table[index]->key, key) == 0)
         {
-            return ht->table[index]->value;
+            res =  ht->table[index]->value;
+            break;
         }
         
         ++index;
@@ -65,18 +71,21 @@ void* ht_get(struct HashTable* ht, const char* key)
            index = 0;
         } 
     }
+    pthread_mutex_unlock(&ht->mutex);
 
-    return NULL;
+    return res;
 }
 
 void ht_set(struct HashTable* ht, const char* key, void* value)
 {
+    pthread_mutex_lock(&ht->mutex);
     ht_set_helper(ht, key, value);
     float load_factor = (float)ht->num_buckets / ht->capacity;
     if (load_factor > 0.70f)
     {
         ht_resize(ht);
     }
+    pthread_mutex_unlock(&ht->mutex);
 }
 
 static void ht_set_helper(struct HashTable *ht, const char *key, void *value)

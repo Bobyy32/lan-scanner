@@ -1,5 +1,12 @@
 #include "device.h"
 
+#include <stdio.h>
+#include <string.h>
+#include <stdlib.h>
+#include <pcap.h>
+#include <netinet/in.h>
+#include "debug.h"
+
 bool get_device_info(device_info* device)
 {
 
@@ -128,3 +135,34 @@ char *get_MAC_addr_str(char *device)
 
     return mac_addr;
 }
+
+
+void device_entry_destroy(void* v)
+{
+    device_entry* entry = (device_entry*)v;
+
+    free(entry->ssdp_server);
+    free(entry->ssdp_location);
+
+    if (entry->services)
+    {
+        for (uint8_t j = 0; j < entry->service_count; ++j)
+        {
+            free(entry->services[j].service_type);
+            free(entry->services[j].instance_name);
+            free(entry->services[j].host_name);
+        }
+        free(entry->services);
+    }
+
+    free(entry);
+}
+
+void pending_srv_destroy(void* v)
+{
+    mdns_service* svc = (mdns_service*)v;
+    free(svc->host_name);
+    free(svc->instance_name);
+    free(svc);
+}
+

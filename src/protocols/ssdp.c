@@ -1,5 +1,12 @@
 #include "ssdp.h"
 
+#include <pcap.h>
+#include <netinet/if_ether.h>
+#include <netinet/ip.h>
+#include <netinet/udp.h>
+#include "../hashtable.h"
+#include "../debug.h"
+
 bool create_ssdp_message(libnet_t *context, const device_info device)
 {
     char* ssdp_m_addr = "239.255.255.250";

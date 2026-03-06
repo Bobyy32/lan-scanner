@@ -1,5 +1,9 @@
 #include "capture.h"
 
+#include <time.h>
+#include <unistd.h>
+#include "debug.h"
+
 pcap_t *init_capture(device_info device, const char *filter)
 {
     char errbuff[PCAP_ERRBUF_SIZE];

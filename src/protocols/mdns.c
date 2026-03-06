@@ -1,5 +1,12 @@
 #include "mdns.h"
 
+#include <pcap.h>
+#include <netinet/if_ether.h>
+#include <netinet/ip.h>
+#include <netinet/udp.h>
+#include "../hashtable.h"
+#include "../debug.h"
+
 // Helper to write a DNS label
 static int write_dns_label(unsigned char *buf, int offset, const char *label)
 {
@@ -82,8 +89,6 @@ bool mdns_discovery_send_m(libnet_t *context, const device_info device)
         debug_printf("Packet size: %s\n", libnet_geterror(context));
         return false;
     }
-
-    debug_printf("Successfuly Sent multicast mDNS request\n");
 
     return true;
 }
@@ -243,35 +248,6 @@ static bool record_parse_srv(const void *data, size_t offset, size_t size, size_
     }
 
     return true;
-}
-
-void device_entry_destroy(void* v)
-{
-    device_entry* entry = (device_entry*)v;
-
-    free(entry->ssdp_server);
-    free(entry->ssdp_location);
-
-    if (entry->services)
-    {
-        for (uint8_t j = 0; j < entry->service_count; ++j)
-        {
-            free(entry->services[j].service_type);
-            free(entry->services[j].instance_name);
-            free(entry->services[j].host_name);
-        }
-        free(entry->services);
-    }
-
-    free(entry);
-}
-
-void pending_srv_destroy(void* v)
-{
-    mdns_service* svc = (mdns_service*)v;
-    free(svc->host_name);
-    free(svc->instance_name);
-    free(svc);
 }
 
 static bool parse_mdns_record(const void *data, size_t size, size_t *offset, mdns_service **services, uint8_t *service_count, struct HashTable *pending_srv_ht)

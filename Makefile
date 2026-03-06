@@ -8,6 +8,9 @@ mdns-test:
 three_prot_test:
 	gcc -g -O0 -Wall -DDEBUG=1 src/hashtable.c src/device.c src/capture.c src/protocols/mdns.c src/protocols/arp.c src/protocols/ssdp.c tests/three_prot_test.c -o build/three_prot_test.out -lpcap -lnet
 
+thread_test:
+	gcc -g -O0 -Wall -DDEBUG=1 -I src src/hashtable.c src/device.c src/capture.c src/scan.c src/protocols/mdns.c src/protocols/arp.c src/protocols/ssdp.c tests/thread_test.c -o build/thread_test.out -lpcap -lnet -lpthread
+
 clean:
 	rm -f build/*
 

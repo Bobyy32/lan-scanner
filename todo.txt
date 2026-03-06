@@ -11,16 +11,7 @@ ARP → mDNS → SSDP → NBNS → passive monitoring → port probes.
 Fingerprinting:
 MAC OUI + DHCP hostname + mDNS device
 
-Things to implement:
-    Refactor ht_destroy function into void ht_destroy(struct HashTable* ht, void (*destroy_value)(void*));
-        - this allows seperate destruction for each type like device_entry and mdns_service structs
-        - seperate destructor functions for each type
-    
-    Keep track of service_entries in a hash table
-        - 
-
-
-    Debugging macros for ease of Debugging
+add threading so each protocol is being ran under their own thread. for sending and receiving
 
 
 https://en.ittrip.xyz/c-language/c-debugging-macro

@@ -1,5 +1,10 @@
 #include "arp.h"
 
+#include <netinet/if_ether.h>
+#include <netinet/in.h>
+#include "../hashtable.h"
+#include "../debug.h"
+
 bool create_arp_message(libnet_t* context, const device_info source_device, const uint32_t target_ip)
 {
     // Make Arp Packet
@@ -24,7 +29,7 @@ bool create_arp_message(libnet_t* context, const device_info source_device, cons
     return true;
 }
 
-void arp_scan(libnet_t* context, const device_info device)
+void arp_sweep(libnet_t* context, const device_info device)
 {
 
     uint32_t start = ntohl(device.network_id);

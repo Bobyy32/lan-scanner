@@ -1,6 +1,7 @@
 #ifndef CAPTURE_H
 #define CAPTURE_H
 
+#include <pcap.h>
 #include "device.h"
 
 struct pcap_pkthdr;

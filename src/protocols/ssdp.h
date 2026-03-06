@@ -1,8 +1,8 @@
 #ifndef SSDP_H
 #define SSDP_H
 
+#include <libnet.h>
 #include "../device.h"
-#include "../hashtable.h"
 
 struct pcap_pkthdr;
 

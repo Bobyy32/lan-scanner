@@ -9,7 +9,7 @@
 #include <stdbool.h>
 #include <string.h>
 
-#include "device.h"
+#include <pthread.h>
 
 typedef struct Bucket
 {
@@ -23,6 +23,7 @@ struct HashTable
     unsigned int num_buckets;
 
     bucket** table;
+    pthread_mutex_t mutex;
 };
 
 struct HashTable* ht_create();
