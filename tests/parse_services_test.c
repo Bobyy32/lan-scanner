@@ -14,17 +14,14 @@ int main(void)
 
     parse_service_info(ports); 
 
-
-    for (uint16_t i = 0; i < ports->num_buckets; ++i)
+    for (uint16_t i = 0; i < ports->capacity; ++i)
     {
         if (ports->table[i])
         {
             port_info* info = (port_info*)ports->table[i]->value;
-
             printf("%s  %d  %s\n", info->service,info->port, info->protocol);
         }
     }
-
 
     ht_destroy(ports, port_info_destroy);
     return 0;

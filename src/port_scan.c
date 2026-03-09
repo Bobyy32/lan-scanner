@@ -2,6 +2,9 @@
 
 #include <string.h>
 #include <libnet.h>
+#include <netinet/if_ether.h>
+#include <netinet/ip.h>
+#include <netinet/tcp.h>
 
 #include "debug.h"
 #include "device.h"
@@ -12,6 +15,7 @@ void parse_service_info(struct HashTable* ht)
     char* line = NULL;
     size_t len = 0;
     ssize_t read;
+    unsigned int count = 0;
 
     f = fopen("/etc/services", "r");
     if (f == NULL)
@@ -62,7 +66,7 @@ void parse_service_info(struct HashTable* ht)
         info = (port_info*)ht_get(ht, port);
         if (info != NULL)
         {
-            if (strcmp(info->protocol, protocol))
+            if (strcmp(info->protocol, protocol) != 0)
             {
                 size_t new_size = strlen(info->protocol) + strlen(protocol) + 2;
                 char* new_str = malloc(new_size);
@@ -84,6 +88,7 @@ void parse_service_info(struct HashTable* ht)
             info->protocol = strdup(protocol);
 
             ht_set(ht, port, info);
+            count++;
         }
     }
 
@@ -120,4 +125,19 @@ static bool create_tcp_msg(libnet_t* context, const device_info source_device, c
 void tcp_port_scan(const uint32_t target_ip)
 {
    
+}
+
+void tcp_port_rcv_callback(const unsigned char *packet, struct pcap_pkthdr *header, void *data)
+{
+    struct ip* ip_hdr = (struct ip*)(packet + sizeof(struct ether_header));
+    struct tcphdr* tcp_hdr = (struct tcphdr*)(packet + sizeof(struct ether_header) + (ip_hdr->ip_hl << 2));
+
+    if (tcp_hdr->th_flag == (TH_SYN | TH_ACK))
+    {
+        debug_printf("Open port at %d\n", tcp_hdr->th_sport);
+    }
+    else if (tcp_hdr->th_flag == (TH_RST | TH_ACK))
+    {
+        debug_printf("Closed port at %d\n", tcp_hdr->th_sport);
+    }
 }

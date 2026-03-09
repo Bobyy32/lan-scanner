@@ -51,7 +51,4 @@ void device_entry_destroy(void* v);
 void pending_srv_destroy(void* v);
 void port_info_destroy(void *v);
 
-
-
-
 #endif

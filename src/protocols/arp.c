@@ -60,28 +60,29 @@ void arp_rcv_callback(const unsigned char *packet, struct pcap_pkthdr *header, v
 {
     struct HashTable* ht = (struct HashTable*)data;
     struct ether_header* ether_hdr = (struct ether_header*)packet;
-        if(ntohs(ether_hdr->ether_type) == ETHERTYPE_ARP)
+    
+    if(ntohs(ether_hdr->ether_type) == ETHERTYPE_ARP)
+    {
+        struct ether_arp* arp_hdr = (struct ether_arp*)(packet + sizeof(struct ether_header)); 
+        
+        if (ntohs(arp_hdr->ea_hdr.ar_op) == ARPOP_REPLY)
         {
-            struct ether_arp* arp_hdr = (struct ether_arp*)(packet + sizeof(struct ether_header)); 
-            
-            if (ntohs(arp_hdr->ea_hdr.ar_op) == ARPOP_REPLY)
+
+            if (ht_get(ht, inet_ntoa(*(struct in_addr*)arp_hdr->arp_spa)))
             {
-
-                if (ht_get(ht, inet_ntoa(*(struct in_addr*)arp_hdr->arp_spa)))
-                {
-                    return;
-                }
+                return;
+            }
 
 
-                device_entry* value = (device_entry*)calloc(1, sizeof(device_entry));
-                if (value == NULL)
-                {
-                    return;
-                }
+            device_entry* value = (device_entry*)calloc(1, sizeof(device_entry));
+            if (value == NULL)
+            {
+                return;
+            }
 
-                snprintf(value->mac, 18, "%02x:%02x:%02x:%02x:%02x:%02x", arp_hdr->arp_sha[0], arp_hdr->arp_sha[1], arp_hdr->arp_sha[2], arp_hdr->arp_sha[3], arp_hdr->arp_sha[4], arp_hdr->arp_sha[5]);
-                
-                ht_set(ht, inet_ntoa(*(struct in_addr*)arp_hdr->arp_spa), (void*)value);
-            } 
-        }
+            snprintf(value->mac, 18, "%02x:%02x:%02x:%02x:%02x:%02x", arp_hdr->arp_sha[0], arp_hdr->arp_sha[1], arp_hdr->arp_sha[2], arp_hdr->arp_sha[3], arp_hdr->arp_sha[4], arp_hdr->arp_sha[5]);
+            
+            ht_set(ht, inet_ntoa(*(struct in_addr*)arp_hdr->arp_spa), (void*)value);
+        } 
+    }
 }

@@ -64,12 +64,13 @@ int main(void)
                 printf("  mDNS Services:\n");
                 for (uint8_t j = 0; j < entry->service_count; ++j)
                 {
-                     printf("    [%d] type: %s | name: %s | host: %s | port: %u\n",
+                    printf("    [%d] type: %s | name: %s | host: %s | port: %u\n",
                         j,
                         entry->services[j].service_type ? entry->services[j].service_type : "unknown",
                         entry->services[j].instance_name ? entry->services[j].instance_name : "unknown",
                         entry->services[j].host_name ? entry->services[j].host_name : "unknown",
-                        entry->services[j].port);
+                        entry->services[j].port
+                    );
                 }
             }
 
