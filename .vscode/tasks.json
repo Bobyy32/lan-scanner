@@ -11,6 +11,20 @@
 			},
 			"problemMatcher": [],
 			"detail": "Make template build task"
+		},
+		{
+			"type": "shell",
+			"label": "Make: thread_test",
+			"command": "make thread_test",
+			"group": "build",
+			"problemMatcher": []
+		},
+		{
+			"type": "shell",
+			"label": "Make: parse_services_test",
+			"command": "make parse_services_test",
+			"group": "build",
+			"problemMatcher": []
 		}
 	]
 }

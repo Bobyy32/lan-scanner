@@ -166,3 +166,10 @@ void pending_srv_destroy(void* v)
     free(svc);
 }
 
+void port_info_destroy(void *v)
+{
+    port_info* info = (port_info*)v;
+    free(info->service);
+    free(info->protocol);
+    free(info);
+}

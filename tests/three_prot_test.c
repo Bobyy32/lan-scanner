@@ -1,4 +1,5 @@
 
+#include "../src/debug.h"
 #include "../src/hashtable.h"
 #include "../src/device.h"
 #include "../src/capture.h"
@@ -13,26 +14,8 @@ int main(void)
 
     capture_ht ct = {.ht = ht, .srv_table = srv_ht};
 
-    device_info my_device = { 0 };
-
-    if (ht == NULL || srv_ht == NULL)
-    {
-        debug_printf("Unable to create hash table!\n");
-        ht_destroy(ht, device_entry_destroy);
-        ht_destroy(srv_ht, pending_srv_destroy);
-        return (EXIT_FAILURE);
-    }
-
-    if(!get_device_info(&my_device))
-    {
-        debug_printf("Unable to get device info!\n");
-        ht_destroy(ht, device_entry_destroy);
-        ht_destroy(srv_ht, pending_srv_destroy);
-        return (EXIT_FAILURE);
-    }
-
     char pcap_errbuff[PCAP_ERRBUF_SIZE];
-    pcap_t* handle = pcap_open_offline("tests/pcap/mDNS-CC3000.pcapng", pcap_errbuff);
+    pcap_t* handle = pcap_open_offline("tests/pcap/logingintoIS.pcap", pcap_errbuff);
     if (!handle)
     {
         debug_printf("Unable to initialize pcap: %s\n", pcap_errbuff);

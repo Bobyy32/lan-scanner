@@ -5,15 +5,12 @@
 #include <stdbool.h>
 #include <net/if.h>
 
-/*
-    Have a struct that holds device details:
-    name of interface
-    ip
-    Subnet Mask
-    Network ID
-    braodcast address
-    mac address
-*/
+typedef struct PortInfo 
+{
+    char* service;
+    uint16_t port;
+    char* protocol;
+} port_info;
 
 typedef struct Capture_Hash_Table
 {
@@ -28,16 +25,6 @@ typedef struct MdnsService
     char* host_name;        // shahs-mac-mini.local
     uint16_t port;
 } mdns_service;
-
-/*
-typedef struct MdnsService
-{
-    char* name;
-    char* type;
-    uint16_t port;
-} mdns_service;
-
-*/
 
 typedef struct DeviceInfo
 {
@@ -69,6 +56,8 @@ char* get_MAC_addr_str(char* device);
 
 void device_entry_destroy(void* v);
 void pending_srv_destroy(void* v);
+void port_info_destroy(void *v);
+
 
 
 
