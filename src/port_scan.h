@@ -5,7 +5,7 @@
 
 typedef struct PortInfo {
     char* service;
-    uint8_t port;
+    uint16_t port;
     char* protocol;
 } port_info;
 

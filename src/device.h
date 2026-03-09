@@ -5,13 +5,6 @@
 #include <stdbool.h>
 #include <net/if.h>
 
-typedef struct PortInfo 
-{
-    char* service;
-    uint16_t port;
-    char* protocol;
-} port_info;
-
 typedef struct Capture_Hash_Table
 {
     struct HashTable* ht;

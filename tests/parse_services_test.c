@@ -12,10 +12,18 @@ int main(void)
         return -1;
     }
 
-    parse_service_info(ports);
-    
+    parse_service_info(ports); 
 
-    
+
+    for (uint16_t i = 0; i < ports->num_buckets; ++i)
+    {
+        if (ports->table[i])
+        {
+            port_info* info = (port_info*)ports->table[i]->value;
+
+            printf("%s  %d  %s\n", info->service,info->port, info->protocol);
+        }
+    }
 
 
     ht_destroy(ports, port_info_destroy);

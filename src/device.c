@@ -1,4 +1,5 @@
 #include "device.h"
+#include "port_scan.h"
 
 #include <stdio.h>
 #include <string.h>
