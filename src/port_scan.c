@@ -122,9 +122,21 @@ static bool create_tcp_msg(libnet_t* context, const device_info source_device, c
     return true;
 }
 
-void tcp_port_scan(const uint32_t target_ip)
+void tcp_port_scan(libnet_t* context, const device_info source_device, const uint8_t* target_mac, const uint32_t target_ip, const uint16_t target_port)
 {
-   
+ 
+    if(!create_tcp_msg(context, source_device, target_mac, target_ip, target_port))
+    {
+        debug_printf("Failed to create tcp packet!\n");
+        return;
+    }
+
+    int c = libnet_write(context);
+    if (c == -1)
+    {
+        debug_printf("Failed to write tcp packet!\n");
+        return;
+    }
 }
 
 void tcp_port_rcv_callback(const unsigned char *packet, struct pcap_pkthdr *header, void *data)
@@ -132,11 +144,11 @@ void tcp_port_rcv_callback(const unsigned char *packet, struct pcap_pkthdr *head
     struct ip* ip_hdr = (struct ip*)(packet + sizeof(struct ether_header));
     struct tcphdr* tcp_hdr = (struct tcphdr*)(packet + sizeof(struct ether_header) + (ip_hdr->ip_hl << 2));
 
-    if (tcp_hdr->th_flag == (TH_SYN | TH_ACK))
+    if (tcp_hdr->th_flags == (TH_SYN | TH_ACK))
     {
         debug_printf("Open port at %d\n", tcp_hdr->th_sport);
     }
-    else if (tcp_hdr->th_flag == (TH_RST | TH_ACK))
+    else if (tcp_hdr->th_flags == (TH_RST | TH_ACK))
     {
         debug_printf("Closed port at %d\n", tcp_hdr->th_sport);
     }
