@@ -9,7 +9,43 @@
 #include "debug.h"
 #include "device.h"
 
-void parse_service_info(struct HashTable* ht)
+static int get_port_num()
+{
+    int sock;
+    struct sockaddr_in temp_sock;
+    socklen_t len = sizeof(temp_sock);
+
+    sock = socket(PF_INET, SOCK_STREAM, 0);
+    if (sock < 0)
+    {
+        debug_printf("Failed ot create socket\n");
+        return 0;
+    }
+
+    temp_sock.sin_family = AF_INET;
+    temp_sock.sin_port = htons(0);
+    temp_sock.sin_addr.s_addr = INADDR_ANY;
+
+    if (bind(sock, (struct sockaddr*) &temp_sock, sizeof(temp_sock)) < 0)
+    {
+        debug_printf("Failed to bind socket\n");
+        close(sock);
+        return 0;
+    }
+
+    if (getsockname(sock, (struct sockaddr*)&temp_sock, &len) < 0)
+    {
+        debug_printf("Failed to get socket number\n");
+        close(sock);
+        return 0;
+    }
+
+    int port = ntohs(temp_sock.sin_port);
+    close(sock);
+    return port;
+}
+
+void parse_service_info(struct HashTable *ht)
 {
     FILE* f = NULL;
     char* line = NULL;
@@ -98,7 +134,8 @@ void parse_service_info(struct HashTable* ht)
 
 static bool create_tcp_msg(libnet_t* context, const device_info source_device, const uint8_t* target_mac, const uint32_t target_ip, const uint16_t target_port)
 {
-    libnet_ptag_t tcp_hdr = libnet_build_tcp(target_port, target_port, 0x01010101, 0, TH_SYN, 1024, 0, 0, LIBNET_TCP_H, NULL, 0, context, 0);
+
+    libnet_ptag_t tcp_hdr = libnet_build_tcp(get_port_num(), target_port, 0x01010101, 0, TH_SYN, 1024, 0, 0, LIBNET_TCP_H, NULL, 0, context, 0);
     if (tcp_hdr == -1)
     {
         debug_printf("Cant build tcp header: %s\n", libnet_geterror(context));

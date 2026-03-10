@@ -47,6 +47,7 @@ int main (void)
     if (!context)
     {
         debug_printf("Unable to initialize libnet context %s\n", libnet_errbuff);
+        ht_destroy(ht, device_entry_destroy);
         return (EXIT_FAILURE);
     }
 
@@ -70,7 +71,9 @@ int main (void)
     uint8_t mac_bytes[6];                                                                                                                    
     sscanf(target->mac, "%hhx:%hhx:%hhx:%hhx:%hhx:%hhx",                                                                                     
         &mac_bytes[0], &mac_bytes[1], &mac_bytes[2],                                                                                         
-        &mac_bytes[3], &mac_bytes[4], &mac_bytes[5]);
+        &mac_bytes[3], &mac_bytes[4], &mac_bytes[5]
+    );
+    
     tcp_port_scan(context, my_device, mac_bytes, inet_addr("192.168.88.1"), 2000);
 
     capture_loop(handle, 10, tcp_port_rcv_callback, NULL);

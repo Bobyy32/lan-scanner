@@ -11,3 +11,5 @@ Fingerprinting:
 MAC OUI + DHCP hostname + mDNS device
 
 finish port scanning
+
+a function that returns an uused ephemeral port number
