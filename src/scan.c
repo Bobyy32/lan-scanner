@@ -4,6 +4,7 @@
 #include "protocols/arp.h"
 #include "protocols/mdns.h"
 #include "protocols/ssdp.h"
+#include "port_scan.h"
 #include "debug.h"
 
 void *arp_scan_thread(void *arg)
@@ -25,6 +26,11 @@ void *ssdp_scan_thread(void *arg)
     scan_args* args = (scan_args*)arg;
     ssdp_scan(args->device, args->ht);
     return NULL;
+}
+
+void *tcp_scan_thread(void *arg)
+{
+    return nullptr;
 }
 
 void arp_scan(struct DeviceInfo *device, struct HashTable *ht)
@@ -140,4 +146,54 @@ void ssdp_scan(struct DeviceInfo *device, struct HashTable *ht)
 
     libnet_destroy(context);
     capture_close(handle);
+}
+
+void tcp_scan(struct DeviceInfo *device, struct HashTable *ht)
+{
+    struct HashTable* ht_services = ht_create();
+    parse_service_info(ht);
+
+    char libnet_errbuff[LIBNET_ERRBUF_SIZE];
+    libnet_t* context = libnet_init(LIBNET_LINK_ADV, device->name, libnet_errbuff);
+    if (!context)
+    {
+        debug_printf("Unable to initialize libnet context %s\n", libnet_errbuff);
+        ht_destroy(ht, device_entry_destroy);
+        return (EXIT_FAILURE);
+    }
+
+    for (size_t i = 0; i < ht->capacity; ++i)
+    {
+        if (ht->table[i] == NULL)
+        {
+            continue;
+        }
+
+        device_entry* target = (device_entry*)ht->table[i]->value;
+        if (target->mac)
+        {
+
+            tcp_port_scan(context, *device, target->mac, inet_addr(ht->table[i]->key), target_port)
+        }
+    }
+
+}
+
+void tcp_rcv(struct DeviceInfo *device, struct HashTable *ht)
+{
+    char filter[256] = {0};
+    snprintf(
+        filter,
+        sizeof(filter),
+        "tcp and not src host %s",
+        inet_ntoa((struct in_addr) {device->ipv4_address})
+    );
+
+    pcap_t* handle = init_capture(*device, filter);
+    if (!handle)
+    {
+        debug_printf("Unable to initialize pcap catpure\n");
+        ht_destroy(ht, device_entry_destroy);
+        return -1;
+    }
 }

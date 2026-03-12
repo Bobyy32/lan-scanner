@@ -92,12 +92,6 @@ void parse_service_info(struct HashTable *ht)
 
         protocol[strcspn(protocol, " \t\n\r")] = '\0';
 
-        /*
-        printf("%s ", service);
-        printf("%s ", port);
-        printf("%s\n", protocol);
-        */
-
         port_info* info = NULL;
         info = (port_info*)ht_get(ht, port);
         if (info != NULL)
@@ -161,7 +155,6 @@ static bool create_tcp_msg(libnet_t* context, const device_info source_device, c
 
 void tcp_port_scan(libnet_t* context, const device_info source_device, const uint8_t* target_mac, const uint32_t target_ip, const uint16_t target_port)
 {
- 
     if(!create_tcp_msg(context, source_device, target_mac, target_ip, target_port))
     {
         debug_printf("Failed to create tcp packet!\n");
