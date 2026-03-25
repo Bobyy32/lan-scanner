@@ -30,7 +30,7 @@ void *ssdp_scan_thread(void *arg)
 
 void *tcp_scan_thread(void *arg)
 {
-    return nullptr;
+    return NULL;
 }
 
 void arp_scan(struct DeviceInfo *device, struct HashTable *ht)
@@ -159,7 +159,7 @@ void tcp_scan(struct DeviceInfo *device, struct HashTable *ht)
     {
         debug_printf("Unable to initialize libnet context %s\n", libnet_errbuff);
         ht_destroy(ht, device_entry_destroy);
-        return (EXIT_FAILURE);
+        return;
     }
 
     for (size_t i = 0; i < ht->capacity; ++i)
@@ -170,10 +170,9 @@ void tcp_scan(struct DeviceInfo *device, struct HashTable *ht)
         }
 
         device_entry* target = (device_entry*)ht->table[i]->value;
-        if (target->mac)
+        if (target->mac[0] != '\0')
         {
-
-            tcp_port_scan(context, *device, target->mac, inet_addr(ht->table[i]->key), target_port)
+            //tcp_port_scan(context, *device, target->mac, inet_addr(ht->table[i]->key), target_port)
         }
     }
 
@@ -194,6 +193,6 @@ void tcp_rcv(struct DeviceInfo *device, struct HashTable *ht)
     {
         debug_printf("Unable to initialize pcap catpure\n");
         ht_destroy(ht, device_entry_destroy);
-        return -1;
+        return;
     }
 }
