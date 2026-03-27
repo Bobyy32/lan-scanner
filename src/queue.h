@@ -14,9 +14,9 @@ typedef struct Queue
     unsigned int count;
 } queue;
 
-void append(queue* q, void* data);
-void* pop_left(queue* q);
+void q_append(queue* q, void* data);
+void* q_pop_left(queue* q);
 
-void destroy_queue(queue* q);
+void q_destroy_queue(queue* q);
 
 #endif

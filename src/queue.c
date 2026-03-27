@@ -5,7 +5,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-void append(queue *q, void *data)
+void q_append(queue *q, void *data)
 {
     node* new = (node*)calloc(1, sizeof(node));
     if (new == NULL)
@@ -30,7 +30,7 @@ void append(queue *q, void *data)
     q->count++;
 }
 
-void *pop_left(queue *q)
+void *q_pop_left(queue *q)
 {
 
     if (q->head == NULL)
@@ -47,11 +47,11 @@ void *pop_left(queue *q)
     return data;
 }
 
-void destroy_queue(queue *q)
+void q_destroy_queue(queue *q)
 {
     while (q->head)
     {
-        void* data = pop_left(q);
+        void* data = q_pop_left(q);
         free(data);
     }
 

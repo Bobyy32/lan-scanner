@@ -20,6 +20,9 @@ port_scan_test:
 queue_test:
 	gcc -g -Wall -DDEBUG=1 src/queue.c tests/queue_test.c -o build/queue_test.out
 
+thread_pool_test:
+	gcc -g -O0 -Wall src/queue.c src/thread_pool.c tests/thread_pool_test.c -o build/thread_pool_test.out -lpthread
+
 clean:
 	rm -f build/*
 
