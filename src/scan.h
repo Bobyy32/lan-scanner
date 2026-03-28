@@ -12,7 +12,7 @@ typedef struct ScanArgs{
 typedef struct Thread_Scan_Args
 {
     device_info source_device;
-    uint8_t* target_mac;
+    uint8_t target_mac[6];
     uint32_t target_ip;
     uint16_t target_port;
 } thread_scan_args;

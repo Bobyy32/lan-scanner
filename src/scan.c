@@ -178,6 +178,7 @@ static void tcp_port_scan_thread(void* arg)
 void tcp_scan(struct DeviceInfo *device, struct HashTable *ht, struct HashTable* ht_ports)
 {
     thread_pool* pool = init_thread_pool(8);
+    unsigned int job_count = 0;
 
     for (size_t i = 0; i < ht->capacity; ++i)
     {
@@ -205,14 +206,17 @@ void tcp_scan(struct DeviceInfo *device, struct HashTable *ht, struct HashTable*
                 }
 
                 args->source_device = *device;
-                args->target_mac = target->mac;
+                memcpy(args->target_mac, target->mac_bytes, 6);
                 args->target_ip = inet_addr(ht->table[i]->key);
                 args->target_port = info.port;
 
                 add_work_thread_pool(pool, tcp_port_scan_thread, args);
+                ++job_count;
             }
         }
     }
+
+    debug_printf("Enqueued %u port scan jobs\n", job_count);
 
     start_work_thread_pool(pool);
     wait_thread_pool(pool);
@@ -225,7 +229,7 @@ void tcp_rcv(struct DeviceInfo *device, struct HashTable *ht)
     snprintf(
         filter,
         sizeof(filter),
-        "tcp and not src host %s",
+        "tcp and dst host %s",
         inet_ntoa((struct in_addr) {device->ipv4_address})
     );
 

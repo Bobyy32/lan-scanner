@@ -81,6 +81,7 @@ void arp_rcv_callback(const unsigned char *packet, struct pcap_pkthdr *header, v
             }
 
             snprintf(value->mac, 18, "%02x:%02x:%02x:%02x:%02x:%02x", arp_hdr->arp_sha[0], arp_hdr->arp_sha[1], arp_hdr->arp_sha[2], arp_hdr->arp_sha[3], arp_hdr->arp_sha[4], arp_hdr->arp_sha[5]);
+            memcpy(value->mac_bytes, arp_hdr->arp_sha, 6);
             
             ht_set(ht, inet_ntoa(*(struct in_addr*)arp_hdr->arp_spa), (void*)value);
         } 
