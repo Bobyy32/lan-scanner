@@ -5,6 +5,7 @@
 #include "protocols/mdns.h"
 #include "protocols/ssdp.h"
 #include "port_scan.h"
+#include "thread_pool.h"
 #include "debug.h"
 
 void *arp_scan_thread(void *arg)
@@ -30,6 +31,15 @@ void *ssdp_scan_thread(void *arg)
 
 void *tcp_scan_thread(void *arg)
 {
+
+
+    return NULL;
+}
+
+void *tcp_rcv_thread(void *arg)
+{
+    scan_args* args = (scan_args*)arg;
+    tcp_rcv(args->device, args->ht);
     return NULL;
 }
 
@@ -148,19 +158,26 @@ void ssdp_scan(struct DeviceInfo *device, struct HashTable *ht)
     capture_close(handle);
 }
 
-void tcp_scan(struct DeviceInfo *device, struct HashTable *ht)
+static void tcp_port_scan_thread(void* arg)
 {
-    struct HashTable* ht_services = ht_create();
-    parse_service_info(ht);
+    thread_scan_args* args = (thread_scan_args*)arg;
 
     char libnet_errbuff[LIBNET_ERRBUF_SIZE];
-    libnet_t* context = libnet_init(LIBNET_LINK_ADV, device->name, libnet_errbuff);
+    libnet_t* context = libnet_init(LIBNET_LINK_ADV, args->source_device.name, libnet_errbuff);
     if (!context)
     {
         debug_printf("Unable to initialize libnet context %s\n", libnet_errbuff);
-        ht_destroy(ht, device_entry_destroy);
         return;
     }
+    
+    tcp_port_scan(context, args->source_device, args->target_mac, args->target_ip, args->target_port);
+
+    libnet_destroy(context);
+}
+
+void tcp_scan(struct DeviceInfo *device, struct HashTable *ht, struct HashTable* ht_ports)
+{
+    thread_pool* pool = init_thread_pool(8);
 
     for (size_t i = 0; i < ht->capacity; ++i)
     {
@@ -172,10 +189,34 @@ void tcp_scan(struct DeviceInfo *device, struct HashTable *ht)
         device_entry* target = (device_entry*)ht->table[i]->value;
         if (target->mac[0] != '\0')
         {
-            //tcp_port_scan(context, *device, target->mac, inet_addr(ht->table[i]->key), target_port)
+            for (size_t j = 0; j < ht_ports->capacity; ++j)
+            {
+                if (ht_ports->table[j] == NULL)
+                {
+                    continue;
+                }
+
+                port_info info = *(port_info*)ht_ports->table[j];
+
+                thread_scan_args* args = (thread_scan_args*)malloc(sizeof(thread_scan_args));
+                if (args == NULL)
+                {
+                    continue;
+                }
+
+                args->source_device = *device;
+                args->target_mac = target->mac;
+                args->target_ip = inet_addr(ht->table[i]->key);
+                args->target_port = info.port;
+
+                add_work_thread_pool(pool, tcp_port_scan_thread, args);
+            }
         }
     }
 
+    start_work_thread_pool(pool);
+    wait_thread_pool(pool);
+    destroy_thread_pool(pool);
 }
 
 void tcp_rcv(struct DeviceInfo *device, struct HashTable *ht)
@@ -192,7 +233,9 @@ void tcp_rcv(struct DeviceInfo *device, struct HashTable *ht)
     if (!handle)
     {
         debug_printf("Unable to initialize pcap catpure\n");
-        ht_destroy(ht, device_entry_destroy);
         return;
     }
+
+    capture_loop(handle, 20, tcp_port_rcv_callback, NULL);
+    capture_close(handle);
 }

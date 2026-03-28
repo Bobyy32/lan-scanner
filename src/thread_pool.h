@@ -38,5 +38,6 @@ thread_pool* init_thread_pool(unsigned int num_threads);
 void destroy_thread_pool(thread_pool* t_pool);
 void wait_thread_pool(thread_pool* t_pool);
 void add_work_thread_pool(thread_pool* t_pool, job_fn function, void* args);
+void start_work_thread_pool(thread_pool* t_pool);
 
 #endif

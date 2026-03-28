@@ -12,12 +12,23 @@
 int main (void)
 {
     struct HashTable* ht = ht_create();
-    struct DeviceInfo my_device = {0};
+    struct HashTable* ht_ports = ht_create();
+    struct DeviceInfo my_device = { 0 };
 
-    if (ht == NULL)
+    if (ht == NULL || ht_ports == NULL)
     {
         debug_printf("Unable to create hash table!\n");
-        ht_destroy(ht, device_entry_destroy);
+
+        if (ht)
+        {
+            ht_destroy(ht, device_entry_destroy);
+        }
+
+        if (ht_ports)
+        {
+            ht_destroy(ht_ports, port_info_destroy);
+        }
+
         return (EXIT_FAILURE);
     }
 
@@ -25,61 +36,52 @@ int main (void)
     {
         debug_printf("Unable to get device info!\n");
         ht_destroy(ht, device_entry_destroy);
+        ht_destroy(ht_ports, port_info_destroy);
         return (EXIT_FAILURE);
     }
 
-    arp_scan(&my_device, ht);
+    parse_service_info(ht_ports);
 
-    device_entry* target = ht_get(ht, "192.168.88.1");\
-    if (target == NULL)
+
+    scan_args args= {.device = &my_device, .ht = ht};
+
+    int rc1, rc2, rc3;
+    pthread_t thread1, thread2, thread3;
+
+    if ((rc1 = pthread_create(&thread1, NULL, arp_scan_thread, &args)))
     {
-        debug_printf("Target 192.168.88.1 doesn't exist\n");
-        ht_destroy(ht, device_entry_destroy);
-        return (EXIT_FAILURE);
+        debug_printf("Thread creation failed %d\n", rc1);
     }
 
-    printf("Device Ip: 192.168.88.1\n");
-    printf("Device MAC: %s\n", target->mac);
-
-
-    char libnet_errbuff[LIBNET_ERRBUF_SIZE];
-    libnet_t* context = libnet_init(LIBNET_LINK_ADV, my_device.name, libnet_errbuff);
-    if (!context)
+    if ((rc2 = pthread_create(&thread2, NULL, mdns_scan_thread, &args)))
     {
-        debug_printf("Unable to initialize libnet context %s\n", libnet_errbuff);
-        ht_destroy(ht, device_entry_destroy);
-        return (EXIT_FAILURE);
+        debug_printf("Thread creation failed %d\n", rc2);
     }
 
-    char filter[256] = {0};
-    snprintf(
-        filter,
-        sizeof(filter),
-        "tcp and not src host %s",
-        inet_ntoa((struct in_addr) {my_device.ipv4_address})
-    );
 
-    pcap_t* handle = init_capture(my_device, filter);
-    if (!handle)
+    if ((rc3 = pthread_create(&thread3, NULL, ssdp_scan_thread, &args)))
     {
-        debug_printf("Unable to initialize pcap catpure\n");
-        libnet_destroy(context);
-        ht_destroy(ht, device_entry_destroy);
-        return -1;
+        debug_printf("Thread creation failed %d\n", rc3);
     }
 
-    uint8_t mac_bytes[6];                                                                                                                    
-    sscanf(target->mac, "%hhx:%hhx:%hhx:%hhx:%hhx:%hhx",                                                                                     
-        &mac_bytes[0], &mac_bytes[1], &mac_bytes[2],                                                                                         
-        &mac_bytes[3], &mac_bytes[4], &mac_bytes[5]
-    );
+    pthread_join(thread1, NULL);
+    pthread_join(thread2, NULL);
+    pthread_join(thread3, NULL);
     
-    tcp_port_scan(context, my_device, mac_bytes, inet_addr("192.168.88.1"), 2000);
 
-    capture_loop(handle, 10, tcp_port_rcv_callback, NULL);
+    int rc5;
+    pthread_t thread5;
+
+    if ((rc5 = pthread_create(&thread5, NULL, tcp_rcv_thread, &args)))
+    {
+        debug_printf("Thread creation failed %d\n", rc5);
+    }
+
+    tcp_scan(&my_device, ht, ht_ports);
+
+    pthread_join(thread5, NULL);
 
     ht_destroy(ht, device_entry_destroy);
-    libnet_destroy(context);
-    capture_close(handle);
+    ht_destroy(ht_ports, port_info_destroy);
     return 0;
 }

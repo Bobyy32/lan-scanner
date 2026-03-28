@@ -176,10 +176,10 @@ void tcp_port_rcv_callback(const unsigned char *packet, struct pcap_pkthdr *head
 
     if (tcp_hdr->th_flags == (TH_SYN | TH_ACK))
     {
-        debug_printf("Open port at %d\n", tcp_hdr->th_sport);
+        debug_printf("Open port at %d from %s\n", ntohs(tcp_hdr->th_sport), inet_ntoa(ip_hdr->ip_src));
     }
     else if (tcp_hdr->th_flags == (TH_RST | TH_ACK))
     {
-        debug_printf("Closed port at %d\n", tcp_hdr->th_sport);
+        debug_printf("Closed port at %d from %s\n", ntohs(tcp_hdr->th_sport), inet_ntoa(ip_hdr->ip_src));
     }
 }

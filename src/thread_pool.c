@@ -52,7 +52,7 @@ void destroy_thread_pool(thread_pool* t_pool)
     {
         while (t_pool->work_queue.head)
         {
-            void* data = q_pop_left(&t_pool->work_queue);
+            job* data = q_pop_left(&t_pool->work_queue);
             free(data);
         }
     }
@@ -80,8 +80,12 @@ void add_work_thread_pool(thread_pool *t_pool, job_fn function, void *args)
     job* new_job = create_job(function, args);
     pthread_mutex_lock(&t_pool->mutex);
     q_append(&t_pool->work_queue, new_job);
-    pthread_cond_signal(&t_pool->work_cond);
     pthread_mutex_unlock(&t_pool->mutex);
+}
+
+void start_work_thread_pool(thread_pool *t_pool)
+{
+    pthread_cond_broadcast(&t_pool->work_cond);
 }
 
 static void* thread_work_loop(void *t_pool_arg)
@@ -106,7 +110,7 @@ static void* thread_work_loop(void *t_pool_arg)
             break;
         }
 
-        todo = q_pop_left(&t_pool->work_queue);
+        todo = (job*)q_pop_left(&t_pool->work_queue);
         ++t_pool->thread_working;
 
         pthread_mutex_unlock(&t_pool->mutex);
@@ -114,6 +118,7 @@ static void* thread_work_loop(void *t_pool_arg)
         if (todo != NULL)
         {
             todo->function(todo->args);
+            free(todo->args);
             free(todo);
         }
 
