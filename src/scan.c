@@ -240,6 +240,6 @@ void tcp_rcv(struct DeviceInfo *device, struct HashTable *ht)
         return;
     }
 
-    capture_loop(handle, 20, tcp_port_rcv_callback, NULL);
+    capture_loop(handle, 20, tcp_port_rcv_callback, (void*)ht);
     capture_close(handle);
 }

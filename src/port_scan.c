@@ -171,15 +171,26 @@ void tcp_port_scan(libnet_t* context, const device_info source_device, const uin
 
 void tcp_port_rcv_callback(const unsigned char *packet, struct pcap_pkthdr *header, void *data)
 {
+    struct HashTable* ht = (struct HashTable*)data;
     struct ip* ip_hdr = (struct ip*)(packet + sizeof(struct ether_header));
     struct tcphdr* tcp_hdr = (struct tcphdr*)(packet + sizeof(struct ether_header) + (ip_hdr->ip_hl << 2));
 
     if (tcp_hdr->th_flags == (TH_SYN | TH_ACK))
     {
-        debug_printf("Open port at %d from %s\n", ntohs(tcp_hdr->th_sport), inet_ntoa(ip_hdr->ip_src));
-    }
-    else if (tcp_hdr->th_flags == (TH_RST | TH_ACK))
-    {
-        debug_printf("Closed port at %d from %s\n", ntohs(tcp_hdr->th_sport), inet_ntoa(ip_hdr->ip_src));
+        uint16_t port = ntohs(tcp_hdr->th_sport);
+        char* src_ip = inet_ntoa(ip_hdr->ip_src);
+        //debug_printf("Open port at %d from %s\n", port, src_ip);
+
+        device_entry* entry = (device_entry*)ht_get(ht, src_ip);
+        if (entry != NULL)
+        {
+            uint16_t* tmp = realloc(entry->open_ports, (entry->open_port_count + 1) * sizeof(uint16_t));
+            if (tmp != NULL)
+            {
+                entry->open_ports = tmp;
+                entry->open_ports[entry->open_port_count] = port;
+                entry->open_port_count++;
+            }
+        }
     }
 }

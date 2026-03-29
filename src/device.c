@@ -145,6 +145,8 @@ void device_entry_destroy(void* v)
     free(entry->ssdp_server);
     free(entry->ssdp_location);
 
+    free(entry->open_ports);
+
     if (entry->services)
     {
         for (uint8_t j = 0; j < entry->service_count; ++j)

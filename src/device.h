@@ -38,6 +38,8 @@ typedef struct DeviceEntry
     char* ssdp_location; // location header from ssdp
     mdns_service* services;
     uint8_t service_count;
+    uint16_t* open_ports;
+    uint16_t open_port_count;
 } device_entry;
 
 

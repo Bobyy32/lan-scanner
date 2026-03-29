@@ -81,6 +81,65 @@ int main (void)
 
     pthread_join(thread5, NULL);
 
+
+    for (size_t i = 0; i < ht->capacity; ++i)
+    {
+        if (ht->table[i])
+        {
+            device_entry* entry = (device_entry*)ht->table[i]->value;
+            printf("IP: %s\n", ht->table[i]->key);
+
+            if(entry->mac[0] != '\0')
+            {
+                printf("  MAC address:   %s\n", entry->mac);
+            }
+
+            if (entry->ssdp_server)
+            {
+                printf("  SSDP Server:   %s\n", entry->ssdp_server);
+            }
+            if (entry->ssdp_location)
+            {
+                printf("  SSDP Location: %s\n", entry->ssdp_location);
+            }
+
+            if (entry->service_count > 0)
+            {
+                printf("  mDNS Services:\n");
+                for (uint8_t j = 0; j < entry->service_count; ++j)
+                {
+                    printf("    [%d] type: %s | name: %s | host: %s | port: %u\n",
+                        j,
+                        entry->services[j].service_type ? entry->services[j].service_type : "unknown",
+                        entry->services[j].instance_name ? entry->services[j].instance_name : "unknown",
+                        entry->services[j].host_name ? entry->services[j].host_name : "unknown",
+                        entry->services[j].port
+                    );
+                }
+            }
+
+            if (entry->open_port_count > 0)
+            {
+                printf("  Open TCP Services:\n");
+                for (uint16_t j = 0; j < entry->open_port_count; ++j)
+                {
+                    char buf[6];
+                    snprintf(buf, sizeof(buf), "%u", (unsigned)entry->open_ports[j]);
+                    port_info* info = (port_info*)ht_get(ht_ports, buf);
+                    if (info == NULL)
+                    {
+                        continue;
+                    }
+                    printf("    Port: %u | Service %s\n", info->port, info->service);
+                }
+
+            }
+    
+            putc('\n', stdout);
+        }
+    }
+
+
     ht_destroy(ht, device_entry_destroy);
     ht_destroy(ht_ports, port_info_destroy);
     return 0;
