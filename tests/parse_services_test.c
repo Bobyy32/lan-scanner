@@ -23,6 +23,8 @@ int main(void)
         }
     }
 
+    printf("Number of services %u\n", ports->num_buckets);
+
     ht_destroy(ports, port_info_destroy);
     return 0;
 }

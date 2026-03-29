@@ -216,8 +216,6 @@ void tcp_scan(struct DeviceInfo *device, struct HashTable *ht, struct HashTable*
         }
     }
 
-    debug_printf("Enqueued %u port scan jobs\n", job_count);
-
     start_work_thread_pool(pool);
     wait_thread_pool(pool);
     destroy_thread_pool(pool);
@@ -240,6 +238,6 @@ void tcp_rcv(struct DeviceInfo *device, struct HashTable *ht)
         return;
     }
 
-    capture_loop(handle, 20, tcp_port_rcv_callback, (void*)ht);
+    capture_loop(handle, 30, tcp_port_rcv_callback, (void*)ht);
     capture_close(handle);
 }

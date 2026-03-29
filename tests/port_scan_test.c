@@ -128,9 +128,12 @@ int main (void)
                     port_info* info = (port_info*)ht_get(ht_ports, buf);
                     if (info == NULL)
                     {
-                        continue;
+                        printf("    Port: %u | Service: UNKNOWN\n", (unsigned)entry->open_ports[j]);
                     }
-                    printf("    Port: %u | Service %s\n", info->port, info->service);
+                    else
+                    {
+                        printf("    Port: %u | Service: %s\n", info->port, info->service);
+                    }
                 }
 
             }
