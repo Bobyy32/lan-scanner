@@ -58,20 +58,28 @@ int main (void)
         debug_printf("Thread creation failed %d\n", rc2);
     }
 
-
     if ((rc3 = pthread_create(&thread3, NULL, ssdp_scan_thread, &args)))
     {
         debug_printf("Thread creation failed %d\n", rc3);
     }
 
-    pthread_join(thread1, NULL);
-    pthread_join(thread2, NULL);
-    pthread_join(thread3, NULL);
-    
+    if (rc1 == 0)
+    {
+        pthread_join(thread1, NULL);
+    }
+
+    if (rc2 == 0)
+    {
+        pthread_join(thread2, NULL);
+    }
+
+    if (rc3 == 0)
+    {
+        pthread_join(thread3, NULL);
+    }    
 
     int rc5;
     pthread_t thread5;
-
     if ((rc5 = pthread_create(&thread5, NULL, tcp_rcv_thread, &args)))
     {
         debug_printf("Thread creation failed %d\n", rc5);

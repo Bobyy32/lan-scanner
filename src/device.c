@@ -176,3 +176,79 @@ void port_info_destroy(void *v)
     free(info->protocol);
     free(info);
 }
+
+void print_help(const char* prog_name)
+{
+    printf("Usage: %s [OPTIONS]\n\n", prog_name);
+    printf("Options:\n");
+    printf("  --tcp              Run TCP port scan (all common ports)\n");
+    printf("  --arp              Run ARP discovery\n");
+    printf("  --mdns             Run mDNS discovery\n");
+    printf("  --ssdp             Run SSDP discovery\n");
+    printf("  --full             Run all scans\n");
+    printf("  -p, --port PORTS   Specify ports to scan (comma-separated, e.g. 22,80,443)\n");
+    printf("  -h, --help         Show this help message\n");
+}
+
+void print_results(struct HashTable* ht, struct HashTable* ht_ports)
+{
+    for (size_t i = 0; i < ht->capacity; ++i)
+    {
+        if (ht->table[i])
+        {
+            device_entry* entry = (device_entry*)ht->table[i]->value;
+            printf("IP: %s\n", ht->table[i]->key);
+
+            if(entry->mac[0] != '\0')
+            {
+                printf("  MAC address:   %s\n", entry->mac);
+            }
+
+            if (entry->ssdp_server)
+            {
+                printf("  SSDP Server:   %s\n", entry->ssdp_server);
+            }
+            if (entry->ssdp_location)
+            {
+                printf("  SSDP Location: %s\n", entry->ssdp_location);
+            }
+
+            if (entry->service_count > 0)
+            {
+                printf("  mDNS Services:\n");
+                for (uint8_t j = 0; j < entry->service_count; ++j)
+                {
+                    printf("    [%d] type: %s | name: %s | host: %s | port: %u\n",
+                        j,
+                        entry->services[j].service_type ? entry->services[j].service_type : "unknown",
+                        entry->services[j].instance_name ? entry->services[j].instance_name : "unknown",
+                        entry->services[j].host_name ? entry->services[j].host_name : "unknown",
+                        entry->services[j].port
+                    );
+                }
+            }
+
+            if (entry->open_port_count > 0)
+            {
+                printf("  Open TCP Services:\n");
+                for (uint16_t j = 0; j < entry->open_port_count; ++j)
+                {
+                    char buf[6];
+                    snprintf(buf, sizeof(buf), "%u", (unsigned)entry->open_ports[j]);
+                    port_info* info = (port_info*)ht_get(ht_ports, buf);
+                    if (info == NULL)
+                    {
+                        printf("    Port: %u | Service: UNKNOWN\n", (unsigned)entry->open_ports[j]);
+                    }
+                    else
+                    {
+                        printf("    Port: %u | Service: %s\n", info->port, info->service);
+                    }
+                }
+
+            }
+    
+            putc('\n', stdout);
+        }
+    }
+}

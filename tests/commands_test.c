@@ -5,6 +5,7 @@
 #include <stddef.h>
 #include <getopt.h>
 #include "../src/debug.h"
+#include "device.h"
 
 
 static void print_help(const char* prog_name)
@@ -20,8 +21,10 @@ static void print_help(const char* prog_name)
     printf("  -h, --help         Show this help message\n");
 }
 
-int main(int argc, char* argv[])
+int main(int argc, char *argv[])
 {
+
+    // get options from cli
     enum 
     {
         OPT_TCP,
@@ -106,6 +109,7 @@ int main(int argc, char* argv[])
         flags |= FLAG_ARP;
     }
 
+    // execute options
     if (flags & FLAG_ARP)
     {
         printf("Running ARP scan\n");
