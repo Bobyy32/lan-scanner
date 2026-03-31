@@ -133,6 +133,8 @@ int main(int argc, char* argv[])
         return (EXIT_FAILURE);
     }
 
+    print_device_info(my_device);
+
     parse_service_info(ht_ports);
 
     // execute options
@@ -203,8 +205,10 @@ int main(int argc, char* argv[])
     }
 
     // print out results
-
-    print_results(ht, ht_ports);
+    if (ht->num_buckets > 0)
+    {
+        print_results(ht, ht_ports);
+    }
 
     // destroy hash tables
     ht_destroy(ht, device_entry_destroy);

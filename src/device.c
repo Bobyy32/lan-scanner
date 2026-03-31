@@ -23,7 +23,6 @@ bool get_device_info(device_info* device)
     {
         strncpy(device->name, device_list[0].name, IF_NAMESIZE - 1);
         device->name[IF_NAMESIZE - 1] = '\0';
-        fprintf(stdout, "Device: %s\n", device->name);
     }
     
     for (pcap_addr_t* a = device_list[0].addresses; a != NULL; a = a->next)
@@ -32,19 +31,15 @@ bool get_device_info(device_info* device)
         {
             // Device IPv4 Address   
             device->ipv4_address = ((struct sockaddr_in*)a->addr)->sin_addr.s_addr;
-            printf("Ip Address: %s\n", inet_ntoa((struct in_addr){device->ipv4_address}));
 
             // Subnet Mask
             device->subnet_mask = ((struct sockaddr_in*)a->netmask)->sin_addr.s_addr;
-            printf("Subnet Mask: %s\n", inet_ntoa((struct in_addr){device->subnet_mask}));
 
             // Broadcast address
             device->broadcast_address = ((struct sockaddr_in*)a->broadaddr)->sin_addr.s_addr;
-            printf("Broadcast Address: %s\n", inet_ntoa((struct in_addr){device->broadcast_address}));
 
             // Network ID
             device->network_id = (uint32_t)(device->ipv4_address & device->subnet_mask);
-            printf("Network ID: %s\n", inet_ntoa((struct in_addr){device->network_id}));
         }
     }
         
@@ -65,12 +60,7 @@ bool get_device_info(device_info* device)
         debug_printf("Couldn't get MAC address (get_MAC_addr)\n");
         return false;
     }
-    else
-    {
-        printf("MAC Address: %02x:%02x:%02x:%02x:%02x:%02x\n\n", 
-            device->mac_address[0], device->mac_address[1], device->mac_address[2], device->mac_address[3], device->mac_address[4], device->mac_address[5]);
-    }
-
+    
     pcap_freealldevs(device_list);
 
     return true;
@@ -190,8 +180,20 @@ void print_help(const char* prog_name)
     printf("  -h, --help         Show this help message\n");
 }
 
-void print_results(struct HashTable* ht, struct HashTable* ht_ports)
+void print_device_info(const device_info device)
 {
+    printf("[Local Device]\n");
+    printf("Device: %s\n", device.name);
+    printf("Ip Address: %s\n", inet_ntoa((struct in_addr){device.ipv4_address}));
+    printf("Subnet Mask: %s\n", inet_ntoa((struct in_addr){device.subnet_mask}));
+    printf("Network ID: %s\n", inet_ntoa((struct in_addr){device.network_id}));
+    printf("MAC Address: %02x:%02x:%02x:%02x:%02x:%02x\n\n", 
+            device.mac_address[0], device.mac_address[1], device.mac_address[2], device.mac_address[3], device.mac_address[4], device.mac_address[5]);
+}
+
+void print_results(struct HashTable *ht, struct HashTable *ht_ports)
+{
+    printf("[Result]\n");
     for (size_t i = 0; i < ht->capacity; ++i)
     {
         if (ht->table[i])
