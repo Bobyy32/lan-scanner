@@ -167,6 +167,14 @@ void port_info_destroy(void *v)
     free(info);
 }
 
+void oui_info_destroy(void *v)
+{
+    oui_info* info = (oui_info*)v;
+    free(info->oui);
+    free(info->organization);
+    free(info);
+}
+
 void print_help(const char* prog_name)
 {
     printf("Usage: %s [OPTIONS]\n\n", prog_name);

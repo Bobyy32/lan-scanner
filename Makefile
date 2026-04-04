@@ -29,6 +29,9 @@ thread_pool_test:
 commands_test:
 	gcc -g -Wall -DDEBUG=1 tests/commands_test.c -o build/commands_test.out
 
+hashtable_ports_oui_test:
+	gcc -g -Wall -DDEBUG=1 tests/hashtable_ports_oui_test.c src/hashtable.c src/device.c src/port_scan.c -o build/hashtable_ports_oui_test.out -lnet -lpcap -lpthread
+
 clean:
 	rm -f build/*
 

@@ -1,3 +1,5 @@
 .vscode/
 build/
 tests/pcap
+resources/oui.txt
+resources/ports.txt

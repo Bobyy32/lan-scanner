@@ -17,14 +17,14 @@ typedef struct Bucket
     void* value;
 }bucket;
 
-struct HashTable
+typedef struct HashTable
 {
     size_t capacity;
     unsigned int num_buckets;
 
     bucket** table;
     pthread_mutex_t mutex;
-};
+} hash_table;
 
 struct HashTable* ht_create();
 void ht_destroy(struct HashTable* ht, void (*destroy_value)(void*));

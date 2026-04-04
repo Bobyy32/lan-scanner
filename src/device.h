@@ -32,7 +32,7 @@ typedef struct DeviceInfo
 
 typedef struct DeviceEntry
 {
-    char mac[18];       // MAC addres
+    char mac[18];       // MAC address
     uint8_t mac_bytes[6];
     char* ssdp_server;  // server header from ssdp
     char* ssdp_location; // location header from ssdp
@@ -41,6 +41,12 @@ typedef struct DeviceEntry
     uint16_t* open_ports;
     uint16_t open_port_count;
 } device_entry;
+
+typedef struct OUI_INFO
+{
+    char* oui; // only first 3 bytes of MAC (AA:BB:CC)
+    char* organization;
+} oui_info;
 
 
 bool get_device_info(device_info* device);
@@ -53,6 +59,7 @@ char* get_MAC_addr_str(char* device);
 void device_entry_destroy(void* v);
 void pending_srv_destroy(void* v);
 void port_info_destroy(void *v);
+void oui_info_destroy(void *v);
 
 void print_help(const char* prog_name);
 void print_device_info(const device_info device);
