@@ -158,7 +158,7 @@ int import_oui_test()
     get_device_info(&my_device);
     print_device_info(my_device);
 
-    char my_oui[9] = { 0 };
+    char my_oui[9] = { 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0 };
     snprintf(my_oui, 9, "%02X:%02X:%02X", my_device.mac_address[0], my_device.mac_address[1], my_device.mac_address[2]);
 
     oui_info* info = ht_get(ht_oui, my_oui);

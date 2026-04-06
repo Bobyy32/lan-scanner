@@ -126,6 +126,68 @@ void parse_service_info(struct HashTable *ht)
     fclose(f);
 }
 
+void import_ports(const char* filepath, hash_table* ht)
+{
+    if (ht == NULL)
+    {
+        debug_printf("Hash table is NULL\n");
+        return;
+    }
+
+    ssize_t read;
+    char* line = NULL;
+    size_t len = 0;
+
+    FILE* f = fopen(filepath, "r");
+    if (f == NULL)
+    {
+        debug_printf("Failed to open %s\n", filepath);
+        return;
+    }
+
+    while ((read = getline(&line, &len, f)) != -1)
+    {
+        char* saveptr = NULL;
+
+        char* service = strtok_r(line, " ", &saveptr);
+        char* port = strtok_r(NULL, " ", &saveptr);
+        char* protocol = strtok_r(NULL, " \n", &saveptr);
+
+        //printf("%s %s %s\n", service, port, protocol);
+        
+        port_info* info = NULL;
+        info = (port_info*)ht_get(ht, port);
+        if (info != NULL)
+        {
+            if (strcmp(info->protocol, protocol) != 0)
+            {
+                size_t new_size = strlen(info->protocol) + strlen(protocol) + 2;
+                char* new_str = malloc(new_size);
+                snprintf(new_str, new_size, "%s/%s", info->protocol, protocol);
+                free(info->protocol);
+                info->protocol = new_str;
+            }
+        }
+        else
+        {
+            info = (port_info*)calloc(1, sizeof(port_info));
+            if (info == NULL)
+            {
+                continue;
+            }
+
+            info->service = strdup(service);
+            info->port = (uint16_t)atoi(port);
+            info->protocol = strdup(protocol);
+
+            ht_set(ht, port, info);
+        }
+    }
+
+    free(line);
+    fclose(f);
+}
+
 static bool create_tcp_msg(libnet_t* context, const device_info source_device, const uint8_t* target_mac, const uint32_t target_ip, const uint16_t target_port)
 {
 

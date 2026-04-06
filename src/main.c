@@ -50,6 +50,7 @@ int main(int argc, char* argv[])
     unsigned int flags = 0;
     int num_port_args = 0;
     uint16_t port_args[300] = { 0 };
+    
     while((opt = getopt_long(argc, argv, "p:h", long_options, &option_index)) != -1)
     {
         switch (opt)
@@ -102,13 +103,15 @@ int main(int argc, char* argv[])
 
     struct HashTable* ht = ht_create();
     struct HashTable* ht_ports = ht_create();
+    struct HashTable* ht_oui = ht_create();
+
     struct DeviceInfo my_device = { 0 };
     scan_args args= {.device = &my_device, .ht = ht};
 
     int rc1, rc2, rc3, rc4;
     pthread_t thread1, thread2, thread3, thread4;
 
-    if (ht == NULL || ht_ports == NULL)
+    if (ht == NULL || ht_ports == NULL || ht_oui == NULL)
     {
         debug_printf("Unable to create hash table!\n");
 
@@ -120,6 +123,11 @@ int main(int argc, char* argv[])
         if (ht_ports)
         {
             ht_destroy(ht_ports, port_info_destroy);
+        }
+
+        if (ht_oui)
+        {
+            ht_destroy(ht_ports, oui_info_destroy);
         }
 
         return EXIT_FAILURE;
@@ -136,6 +144,10 @@ int main(int argc, char* argv[])
     print_device_info(my_device);
 
     parse_service_info(ht_ports);
+
+    import_ports("resources/ports.txt", ht_ports);
+
+    import_oui("resources/oui.txt", ht_oui);
 
     // execute options
     if (flags & FLAG_ARP)
@@ -207,7 +219,7 @@ int main(int argc, char* argv[])
     // print out results
     if (ht->num_buckets > 0)
     {
-        print_results(ht, ht_ports);
+        print_results(ht, ht_ports, ht_oui);
     }
 
     // destroy hash tables

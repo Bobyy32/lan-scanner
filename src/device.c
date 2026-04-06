@@ -127,6 +127,54 @@ char *get_MAC_addr_str(char *device)
     return mac_addr;
 }
 
+void import_oui(const char* filepath, hash_table* ht)
+{
+    if (ht == NULL)
+    {
+        debug_printf("Hash table is NULL\n");
+        return;
+    }
+
+    ssize_t read;
+    char* line = NULL;
+    size_t len = 0;
+
+    FILE* f = fopen(filepath, "r");
+    if (f == NULL)
+    {
+        debug_printf("Failed to open %s\n", filepath);
+        return;
+    }
+
+    while ((read = getline(&line, &len, f)) != -1)
+    {
+
+        char* oui = strtok(line, "\t");
+        char* org = strtok(NULL, "\n");
+        
+
+        if(ht_get(ht, oui))
+        {
+            continue;
+        }
+
+        oui_info* info = calloc(1, sizeof(oui_info));
+
+        if (info == NULL)
+        {
+            continue;
+        }
+
+        info->oui = strdup(oui);
+        info->organization = strdup(org);
+
+        ht_set(ht, oui, info);
+    }
+
+
+    free(line);
+    fclose(f);
+}
 
 void device_entry_destroy(void* v)
 {
@@ -199,7 +247,7 @@ void print_device_info(const device_info device)
             device.mac_address[0], device.mac_address[1], device.mac_address[2], device.mac_address[3], device.mac_address[4], device.mac_address[5]);
 }
 
-void print_results(struct HashTable *ht, struct HashTable *ht_ports)
+void print_results(struct HashTable *ht, struct HashTable *ht_ports, struct HashTable* ht_oui)
 {
     printf("[Result]\n");
     for (size_t i = 0; i < ht->capacity; ++i)
@@ -211,7 +259,14 @@ void print_results(struct HashTable *ht, struct HashTable *ht_ports)
 
             if(entry->mac[0] != '\0')
             {
-                printf("  MAC address:   %s\n", entry->mac);
+
+                char entry_oui[9] = { 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0 };
+                snprintf(entry_oui, 9, "%02X:%02X:%02X", entry->mac_bytes[0], entry->mac_bytes[1], entry->mac_bytes[2]);
+
+                oui_info* entry_info = ht_get(ht_oui, entry_oui);
+
+
+                printf("  MAC address:   %s (%s)\n", entry->mac, entry_info ? entry_info->organization : "unknown");
             }
 
             if (entry->ssdp_server)

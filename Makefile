@@ -1,8 +1,12 @@
 
 release:
+	python scripts/oui_parser.py
+	python scripts/port_parser.py
 	gcc src/*.c src/protocols/*.c -o build/lanscan.out -lpcap -lnet -lpthread
 
 debug:
+	python scripts/oui_parser.py
+	python scripts/port_parser.py
 	gcc -g -O0 -Wall -DDEBUG=1 src/*.c src/protocols/*.c -o build/lanscan.out -lpcap -lnet -lpthread
 
 mdns-test:

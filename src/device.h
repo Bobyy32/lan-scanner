@@ -56,6 +56,8 @@ bool get_MAC_addr(char *device, uint8_t* mac_out);
 // remember to free returned val
 char* get_MAC_addr_str(char* device);
 
+void import_oui(const char* filepath, struct HashTable* ht);
+
 void device_entry_destroy(void* v);
 void pending_srv_destroy(void* v);
 void port_info_destroy(void *v);
@@ -63,6 +65,6 @@ void oui_info_destroy(void *v);
 
 void print_help(const char* prog_name);
 void print_device_info(const device_info device);
-void print_results(struct HashTable* ht, struct HashTable* ht_ports);
+void print_results(struct HashTable* ht, struct HashTable* ht_ports, struct HashTable* ht_oui);
 
 #endif
