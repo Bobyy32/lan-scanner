@@ -48,7 +48,6 @@ typedef struct OUI_INFO
     char* organization;
 } oui_info;
 
-
 bool get_device_info(device_info* device);
 
 bool get_MAC_addr(char *device, uint8_t* mac_out);

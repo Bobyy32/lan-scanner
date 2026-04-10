@@ -127,7 +127,7 @@ char *get_MAC_addr_str(char *device)
     return mac_addr;
 }
 
-void import_oui(const char* filepath, hash_table* ht)
+void import_oui(const char* filepath, struct HashTable* ht)
 {
     if (ht == NULL)
     {

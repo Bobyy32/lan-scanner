@@ -36,6 +36,9 @@ commands_test:
 hashtable_ports_oui_test:
 	gcc -g -Wall -DDEBUG=1 tests/hashtable_ports_oui_test.c src/hashtable.c src/device.c src/port_scan.c -o build/hashtable_ports_oui_test.out -lnet -lpcap -lpthread
 
+json_test:
+	gcc -g -O0 -Wall -DDEBUG=1 tests/json_test.c src/device.c src/hashtable.c src/port_scan.c src/cjson/cJSON.c -o build/json_test.out -lnet -lpcap
+
 clean:
 	rm -f build/*
 
