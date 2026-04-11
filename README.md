@@ -13,6 +13,7 @@ A multi threaded network discovery and port scanning tool for local area network
 
 ## Dependencies
 
+- `cJSON`
 - `libpcap`
 - `libnet`
 - `gcc`
