@@ -7,6 +7,7 @@
 #include "port_scan.h"
 #include "thread_pool.h"
 #include "debug.h"
+#include "config.h"
 
 void *arp_scan_thread(void *arg)
 {
@@ -75,7 +76,7 @@ void arp_scan(struct DeviceInfo *device, struct HashTable *ht)
     }
 
     arp_sweep(context, *device);
-    capture_loop(handle, 5, arp_rcv_callback, (void*)ht);
+    capture_loop(handle, ARP_CAPTURE_SEC, arp_rcv_callback, (void*)ht);
 
     libnet_destroy(context);
     capture_close(handle);
@@ -118,7 +119,7 @@ void mdns_scan(struct DeviceInfo *device, struct HashTable *ht)
 
     capture_ht ct = {.ht = ht, .srv_table = srv_ht};
     mdns_discovery_send_m(context, *device);
-    capture_loop(handle, 5, mdns_discovery_rcv_callback, (void*)&ct);
+    capture_loop(handle, MDNS_CAPTURE_SEC, mdns_discovery_rcv_callback, (void*)&ct);
 
     ht_destroy(srv_ht, pending_srv_destroy);
     libnet_destroy(context);
@@ -152,7 +153,7 @@ void ssdp_scan(struct DeviceInfo *device, struct HashTable *ht)
     }
 
     ssdp_discovery_send(context, *device);
-    capture_loop(handle, 5, ssdp_discovery_rcv_callback, (void*)ht);
+    capture_loop(handle, SSDP_CAPTURE_SEC, ssdp_discovery_rcv_callback, (void*)ht);
 
     libnet_destroy(context);
     capture_close(handle);
@@ -197,7 +198,7 @@ void tcp_scan(struct DeviceInfo *device, struct HashTable *ht, struct HashTable*
                     continue;
                 }
 
-                port_info info = *(port_info*)ht_ports->table[j];
+                port_info* info = (port_info*)ht_ports->table[j];
 
                 thread_scan_args* args = (thread_scan_args*)malloc(sizeof(thread_scan_args));
                 if (args == NULL)
@@ -208,7 +209,7 @@ void tcp_scan(struct DeviceInfo *device, struct HashTable *ht, struct HashTable*
                 args->source_device = *device;
                 memcpy(args->target_mac, target->mac_bytes, 6);
                 args->target_ip = inet_addr(ht->table[i]->key);
-                args->target_port = info.port;
+                args->target_port = info->port;
 
                 add_work_thread_pool(pool, tcp_port_scan_thread, args);
                 ++job_count;
@@ -238,6 +239,6 @@ void tcp_rcv(struct DeviceInfo *device, struct HashTable *ht)
         return;
     }
 
-    capture_loop(handle, 30, tcp_port_rcv_callback, (void*)ht);
+    capture_loop(handle, TCP_CAPTURE_SEC, tcp_port_rcv_callback, (void*)ht);
     capture_close(handle);
 }

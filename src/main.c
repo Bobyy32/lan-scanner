@@ -143,8 +143,6 @@ int main(int argc, char* argv[])
 
     print_device_info(my_device);
 
-    parse_service_info(ht_ports);
-
     import_ports("resources/ports.txt", ht_ports);
 
     import_oui("resources/oui.txt", ht_oui);
