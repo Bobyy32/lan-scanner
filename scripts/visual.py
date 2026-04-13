@@ -52,6 +52,11 @@ for host in data["hosts"]:
     net.add_edge("scanner", ip)
 
 net.toggle_physics(True)
-net.show("resources/mygraph.html", notebook=False)
+net.write_html("resources/mygraph.html", notebook=False)
 
 f.close()
+
+import os
+html_path = os.path.abspath("resources/mygraph.html")
+print(f"Topology saved to {html_path}")
+print("Open this file in your browser to view the network topology.")
