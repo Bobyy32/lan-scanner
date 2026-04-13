@@ -5,6 +5,7 @@
 #include <stdbool.h>
 #include <net/if.h>
 
+
 typedef struct Capture_Hash_Table
 {
     struct HashTable* ht;
@@ -65,5 +66,6 @@ void oui_info_destroy(void *v);
 void print_help(const char* prog_name);
 void print_device_info(const device_info device);
 void print_results(struct HashTable* ht, struct HashTable* ht_ports, struct HashTable* ht_oui);
+void export_discovered_hosts(device_info my_device, struct HashTable* ht, struct HashTable* ht_ports, struct HashTable* ht_oui);
 
 #endif

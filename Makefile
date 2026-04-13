@@ -2,12 +2,12 @@
 release:
 	python scripts/oui_parser.py
 	python scripts/port_parser.py
-	gcc src/*.c src/protocols/*.c -o build/lanscan.out -lpcap -lnet -lpthread
+	gcc src/*.c src/protocols/*.c src/cjson/cJSON.c -o build/lanscan.out -lpcap -lnet -lpthread
 
 debug:
 	python scripts/oui_parser.py
 	python scripts/port_parser.py
-	gcc -g -O0 -Wall -DDEBUG=1 src/*.c src/protocols/*.c -o build/lanscan.out -lpcap -lnet -lpthread
+	gcc -g -O0 -Wall -DDEBUG=1 src/*.c src/protocols/*.c src/cjson/cJSON.c -o build/lanscan.out -lpcap -lnet -lpthread
 
 mdns-test:
 	gcc -g -O0 -Wall -DDEBUG=1 src/hashtable.c src/device.c src/capture.c src/protocols/mdns.c tests/mdns_test.c -o build/mdns_test.out -lpcap -lnet
@@ -41,6 +41,9 @@ json_test:
 
 json_test2:
 	gcc -g -O0 -Wall -DDEBUG=1 tests/json_test2.c src/hashtable.c src/device.c src/scan.c src/port_scan.c src/protocols/*.c src/thread_pool.c src/capture.c src/cjson/cJSON.c src/queue.c -o build/json_test2.out -lnet -lpcap -lpthread
+
+exec_test:
+	gcc -g -O0 -Wall -DDEBUG=1 tests/exec_test.c -o build/exec_test.out
 
 clean:
 	rm -f build/*

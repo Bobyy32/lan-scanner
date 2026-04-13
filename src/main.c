@@ -23,7 +23,8 @@ int main(int argc, char* argv[])
         OPT_SSDP,
         OPT_FULL,
         OPT_HELP = 'h',
-        OPT_PORT = 'p'
+        OPT_PORT = 'p',
+        OPT_TOPO
     };
 
     enum
@@ -32,7 +33,8 @@ int main(int argc, char* argv[])
         FLAG_ARP = 1 << 1,
         FLAG_MDNS = 1 << 2,
         FLAG_SSDP = 1 << 3,
-        FLAG_FULL = FLAG_TCP | FLAG_ARP | FLAG_MDNS | FLAG_SSDP
+        FLAG_FULL = FLAG_TCP | FLAG_ARP | FLAG_MDNS | FLAG_SSDP,
+        FLAG_TOPO = 1 << 4
     };
 
     static struct option long_options[] = {
@@ -42,7 +44,8 @@ int main(int argc, char* argv[])
         {"ssdp", no_argument, NULL, OPT_SSDP},
         {"full", no_argument, NULL, OPT_FULL},
         {"help", no_argument, NULL, OPT_HELP},
-        {"port", required_argument, NULL, OPT_PORT}
+        {"port", required_argument, NULL, OPT_PORT},
+        {"topo", no_argument, NULL, OPT_TOPO}
     };
      
     int opt;
@@ -85,6 +88,10 @@ int main(int argc, char* argv[])
 
                     break;
                 }
+            case OPT_TOPO:
+                printf("selected topology\n");
+                flags |= FLAG_TOPO;
+                break;
             default:
                 break;
         }
@@ -99,7 +106,6 @@ int main(int argc, char* argv[])
     {
         flags |= FLAG_ARP;
     }
-
 
     struct HashTable* ht = ht_create();
     struct HashTable* ht_ports = ht_create();
@@ -214,10 +220,23 @@ int main(int argc, char* argv[])
         }
     }
 
-    // print out results
+    // print out results and show topology
     if (ht->num_buckets > 0)
     {
         print_results(ht, ht_ports, ht_oui);
+
+        if (flags & FLAG_TOPO)
+        {
+            export_discovered_hosts(my_device, ht, ht_ports, ht_oui);
+            if (system("python3 scripts/visual.py") != 0)
+            {
+                system("python scripts/visual.py");
+            }
+        }
+    }
+    else
+    {
+        printf("Failed to find anything\n");
     }
 
     // destroy hash tables
