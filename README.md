@@ -43,6 +43,7 @@ sudo lanscan [OPTIONS]
   --tcp -p PORT,...  TCP port scan (e.g. -p 22,80,443)
   --full             Run all protocols
   -h, --help         Show help
+  --topo             Create html file of network topology
 ```
 
 ## How It Works
