@@ -17,6 +17,7 @@ A multi threaded network discovery and port scanning tool for local area network
 - `libpcap`
 - `libnet`
 - `gcc`
+- `pyvis`
 - `python3` (for generating OUI/port databases during build)
 
 ## Build & Run
