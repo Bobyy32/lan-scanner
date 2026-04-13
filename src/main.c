@@ -89,7 +89,6 @@ int main(int argc, char* argv[])
                     break;
                 }
             case OPT_TOPO:
-                printf("selected topology\n");
                 flags |= FLAG_TOPO;
                 break;
             default:
@@ -228,9 +227,10 @@ int main(int argc, char* argv[])
         if (flags & FLAG_TOPO)
         {
             export_discovered_hosts(my_device, ht, ht_ports, ht_oui);
-            if (system("python3 scripts/visual.py") != 0)
+            if (system("python3 scripts/visual.py") != 0 &&
+                system("python scripts/visual.py") != 0)
             {
-                system("python scripts/visual.py");
+                printf("Error: Python not found. Install python3 and pyvis.\n");
             }
         }
     }

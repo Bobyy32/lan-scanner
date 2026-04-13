@@ -1,12 +1,13 @@
+PYTHON := $(shell command -v python3 2>/dev/null || command -v python 2>/dev/null)
 
 release:
-	python scripts/oui_parser.py
-	python scripts/port_parser.py
+	$(PYTHON) scripts/oui_parser.py
+	$(PYTHON) scripts/port_parser.py
 	gcc src/*.c src/protocols/*.c src/cjson/cJSON.c -o build/lanscan.out -lpcap -lnet -lpthread
 
 debug:
-	python scripts/oui_parser.py
-	python scripts/port_parser.py
+	$(PYTHON) scripts/oui_parser.py
+	$(PYTHON) scripts/port_parser.py
 	gcc -g -O0 -Wall -DDEBUG=1 src/*.c src/protocols/*.c src/cjson/cJSON.c -o build/lanscan.out -lpcap -lnet -lpthread
 
 mdns-test:
