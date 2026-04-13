@@ -3,3 +3,5 @@ build/
 tests/pcap
 resources/oui.txt
 resources/ports.txt
+resources/data.json
+lib/

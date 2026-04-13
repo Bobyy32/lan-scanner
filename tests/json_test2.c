@@ -11,7 +11,7 @@
 void export_discovered_hosts(device_info my_device, hash_table* ht, hash_table* ht_ports, hash_table* ht_oui)
 {
     cJSON* object = NULL;
-    cJSON* network_id = NULL;
+    cJSON* scanner_id = NULL;
     cJSON* subnet = NULL;
     cJSON* hosts = NULL;
 
@@ -21,8 +21,8 @@ void export_discovered_hosts(device_info my_device, hash_table* ht, hash_table* 
         return;
     }
 
-    network_id = cJSON_CreateString(inet_ntoa((struct in_addr){my_device.ipv4_address}));
-    cJSON_AddItemToObject(object, "network_id", network_id);
+    scanner_id = cJSON_CreateString(inet_ntoa((struct in_addr){my_device.ipv4_address}));
+    cJSON_AddItemToObject(object, "scanner_id", scanner_id);
 
     subnet = cJSON_CreateString(inet_ntoa((struct in_addr){my_device.subnet_mask}));
     cJSON_AddItemToObject(object, "subnet", subnet);
