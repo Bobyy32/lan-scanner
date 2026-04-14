@@ -18,7 +18,7 @@ A multi threaded network discovery and port scanning tool for local area network
 - `libnet`
 - `gcc`
 - `pyvis`
-- `python3` (for generating OUI/port databases during build)
+- `python3`
 
 ## Build & Run
 
@@ -48,4 +48,4 @@ sudo lanscan [OPTIONS]
 
 ## How It Works
 
-The scanner runs each protocol in its own thread, using libpcap for packet capture and libnet for packet injection. Discovered devices are stored in a thread safe hash table keyed by MAC address. TCP port scanning uses a thread pool to parallelize connection attempts across all discovered hosts.
+The scanner runs each protocol in its own thread, using libpcap for packet capture and libnet for packet injection. Discovered devices are stored in a thread safe hash table keyed by the device's IP address. TCP port scanning uses a thread pool to parallelize connection attempts across all discovered hosts.
